@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, BackgroundTasks, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 import os
 import sys
@@ -140,6 +140,24 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
         if os.path.exists(file_path):
             os.remove(file_path)
         return {"error": f"处理文件时出错: {str(e)}"}
+
+# 添加根路径处理程序
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>小红书爬虫工具</title>
+        <meta charset="UTF-8">
+        <meta http-equiv="refresh" content="0;url=/api/docs">
+    </head>
+    <body>
+        <p>正在重定向到 API 文档...</p>
+    </body>
+    </html>
+    """
+    return html_content
 
 if __name__ == "__main__":
     import uvicorn
