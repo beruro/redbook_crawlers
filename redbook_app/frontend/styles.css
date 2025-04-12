@@ -1,0 +1,122 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #e74c3c;
+}
+
+.card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+h2 {
+    margin-bottom: 15px;
+    color: #e74c3c;
+}
+
+p {
+    margin-bottom: 15px;
+    color: #666;
+}
+
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    font-family: inherit;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.primary-btn {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.primary-btn:hover {
+    background-color: #c0392b;
+}
+
+.secondary-btn {
+    background-color: #ecf0f1;
+    color: #333;
+}
+
+.secondary-btn:hover {
+    background-color: #bdc3c7;
+}
+
+input[type="file"] {
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+#statusContainer {
+    margin-bottom: 15px;
+}
+
+.status-item {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.status-info {
+    background-color: #d6eaf8;
+    border-left: 4px solid #3498db;
+}
+
+.status-success {
+    background-color: #d5f5e3;
+    border-left: 4px solid #2ecc71;
+}
+
+.status-warning {
+    background-color: #fef9e7;
+    border-left: 4px solid #f1c40f;
+}
+
+.status-error {
+    background-color: #fadbd8;
+    border-left: 4px solid #e74c3c;
+}
+
+#downloadContainer {
+    text-align: center;
+} 

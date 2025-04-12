@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小红书达人数据爬取工具</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>小红书达人数据爬取工具</h1>
+        
+        <div class="card">
+            <h2>输入小红书URL</h2>
+            <p>每行一个URL，支持笔记URL和用户主页URL</p>
+            <textarea id="urls" rows="10" placeholder="请输入小红书URL，每行一个"></textarea>
+            <div class="button-group">
+                <button id="processBtn" class="primary-btn">开始处理</button>
+                <button id="clearBtn" class="secondary-btn">清空</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>或者上传URL文件</h2>
+            <p>支持文本文件，每行一个URL</p>
+            <input type="file" id="fileUpload" accept=".txt">
+            <button id="uploadBtn" class="primary-btn">上传并处理</button>
+        </div>
+        
+        <div class="card" id="statusCard" style="display: none;">
+            <h2>处理状态</h2>
+            <div id="statusContainer"></div>
+            <div id="downloadContainer" style="display: none;">
+                <button id="downloadBtn" class="primary-btn">下载结果</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html> 

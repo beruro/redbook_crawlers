@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 虚拟环境 - 更全面的忽略
+venv/
+ENV/
+env/
+redbook_app/venv/
+**/venv/
+**/ENV/
+**/env/
+**/site-packages/
+**/.venv/
+**/.env/
+**/python3.*/
+
+# IDE 文件
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# 项目特定文件
+results/
+*.xlsx
+*.xls
+*.csv
+uploaded_*
+*.log
+
+# 敏感信息
+.env
+*.pem
+*.key
+credentials.json
+
+# 临时文件
+tmp/
+temp/
+.cache/
