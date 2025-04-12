@@ -5,7 +5,6 @@ import threading
 import time
 import http.server
 import socketserver
-import shutil
 
 # 获取当前脚本所在目录
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -46,20 +45,6 @@ if __name__ == "__main__":
     
     # 设置Docker环境变量
     os.environ['DOCKER_ENV'] = 'true'
-    
-    # 复制前端文件到正确位置
-    frontend_src = os.path.join(SCRIPT_DIR, "frontend")
-    frontend_dest = os.path.join(SCRIPT_DIR, "frontend")
-    
-    # 确保目标目录存在
-    os.makedirs(frontend_dest, exist_ok=True)
-    
-    # 复制前端文件
-    for item in os.listdir(frontend_src):
-        src_item = os.path.join(frontend_src, item)
-        dest_item = os.path.join(frontend_dest, item)
-        if os.path.isfile(src_item):
-            shutil.copy2(src_item, dest_item)
     
     # 启动API服务器（在新线程中）
     api_thread = threading.Thread(target=start_api_server)

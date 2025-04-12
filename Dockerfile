@@ -11,9 +11,6 @@ RUN pip install --no-cache-dir -r redbook_app/requirements.txt
 # 创建必要的目录
 RUN mkdir -p /app/redbook_app/frontend /app/redbook_app/results /app/redbook_app/templates /app/redbook_app/static
 
-# 复制 index.html 到根目录
-COPY index.html /app/
-
 # 暴露端口
 EXPOSE 8008 8080
 
