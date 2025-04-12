@@ -4,7 +4,7 @@ jinja2
 python-multipart
 aiofiles
 pandas
-openpyxl
+openpyxl>=3.0.0
 python-dotenv
 requests
 starlette 

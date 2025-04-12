@@ -27,6 +27,24 @@
             <button id="uploadBtn" class="primary-btn">上传并处理</button>
         </div>
         
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>上传 Excel 文件</h5>
+            </div>
+            <div class="card-body">
+                <p>上传包含小红书 URL 的 Excel 文件，系统将自动提取并处理。</p>
+                <div class="mb-3">
+                    <label for="excelUpload" class="form-label">选择 Excel 文件</label>
+                    <input type="file" class="form-control" id="excelUpload" accept=".xlsx,.xls">
+                </div>
+                <div class="mb-3">
+                    <label for="columnInput" class="form-label">URL 所在列 (例如: A, B, C...)</label>
+                    <input type="text" class="form-control" id="columnInput" placeholder="A" value="A">
+                </div>
+                <button id="uploadExcelBtn" class="btn btn-primary">上传并处理</button>
+            </div>
+        </div>
+        
         <div class="card" id="statusCard" style="display: none;">
             <h2>处理状态</h2>
             <div id="statusContainer"></div>

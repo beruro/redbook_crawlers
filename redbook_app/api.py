@@ -6,6 +6,7 @@ import os
 import sys
 from typing import List, Dict, Any, Optional
 from fastapi.staticfiles import StaticFiles
+import pandas as pd
 
 # 将当前目录添加到Python路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -140,6 +141,71 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
         
         return {"message": "文件已上传并开始处理，请查看状态"}
     
+    except Exception as e:
+        # 确保临时文件被删除
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        return {"error": f"处理文件时出错: {str(e)}"}
+
+@app.post("/api/upload-excel")
+async def upload_excel_file(background_tasks: BackgroundTasks, file: UploadFile = File(...), column: str = Form("A")):
+    global processing_status, result_file_path
+    
+    # 重置状态
+    processing_status = []
+    result_file_path = None
+    
+    # 验证文件类型
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        return {"error": "请上传 Excel 文件 (.xlsx 或 .xls)"}
+    
+    # 保存上传的文件
+    file_path = f"uploaded_{file.filename}"
+    try:
+        # 保存文件
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+        
+        # 读取 Excel 文件
+        try:
+            df = pd.read_excel(file_path)
+            
+            # 检查列是否存在
+            if column.upper() in df.columns:
+                # 使用列名
+                url_column = column.upper()
+            elif column.isalpha():
+                # 将列字母转换为索引 (A->0, B->1, etc.)
+                col_idx = ord(column.upper()) - ord('A')
+                if col_idx >= 0 and col_idx < len(df.columns):
+                    url_column = df.columns[col_idx]
+                else:
+                    return {"error": f"列 {column} 不存在"}
+            else:
+                return {"error": "请提供有效的列名或列字母 (如 A, B, C...)"}
+            
+            # 提取 URL
+            url_list = []
+            for url in df[url_column].dropna():
+                url = str(url).strip()
+                if url and "xiaohongshu" in url:
+                    url_list.append(url)
+            
+            # 删除临时文件
+            os.remove(file_path)
+            
+            if not url_list:
+                return {"error": "Excel 文件中没有找到有效的小红书 URL"}
+            
+            # 在后台任务中处理 URL
+            processing_status.append({"status": "info", "message": f"从 Excel 文件中读取了 {len(url_list)} 个 URL"})
+            background_tasks.add_task(process_urls_background, url_list)
+            
+            return {"message": "Excel 文件已上传并开始处理，请查看状态"}
+            
+        except Exception as e:
+            return {"error": f"读取 Excel 文件时出错: {str(e)}"}
+            
     except Exception as e:
         # 确保临时文件被删除
         if os.path.exists(file_path):

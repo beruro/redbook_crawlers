@@ -13,12 +13,16 @@ const statusCard = document.getElementById('statusCard');
 const statusContainer = document.getElementById('statusContainer');
 const downloadContainer = document.getElementById('downloadContainer');
 const downloadBtn = document.getElementById('downloadBtn');
+const excelUpload = document.getElementById('excelUpload');
+const columnInput = document.getElementById('columnInput');
+const uploadExcelBtn = document.getElementById('uploadExcelBtn');
 
 // 事件监听器
 processBtn.addEventListener('click', processUrls);
 clearBtn.addEventListener('click', clearUrls);
 uploadBtn.addEventListener('click', uploadFile);
 downloadBtn.addEventListener('click', downloadResult);
+uploadExcelBtn.addEventListener('click', uploadExcelFile);
 
 // 处理URL
 async function processUrls() {
@@ -151,5 +155,61 @@ async function downloadResult() {
     } catch (error) {
         console.error('下载文件时出错:', error);
         alert(`下载文件时出错: ${error.message}`);
+    }
+}
+
+// 上传 Excel 文件
+async function uploadExcelFile() {
+    const file = excelUpload.files[0];
+    if (!file) {
+        alert('请选择一个 Excel 文件');
+        return;
+    }
+    
+    // 验证文件类型
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        alert('请上传 Excel 文件 (.xlsx 或 .xls)');
+        return;
+    }
+    
+    // 获取列名
+    const column = columnInput.value.trim() || 'A';
+    if (!/^[A-Za-z]$/.test(column)) {
+        alert('请输入有效的列字母 (A-Z)');
+        return;
+    }
+    
+    try {
+        uploadExcelBtn.disabled = true;
+        uploadExcelBtn.textContent = '上传中...';
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('column', column);
+        
+        const response = await fetch(`${API_BASE_URL}/upload-excel`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            alert(data.error);
+            statusContainer.innerHTML = `<div class="status-item status-error">${data.error}</div>`;
+        } else {
+            // 显示状态卡片
+            statusCard.style.display = 'block';
+            statusContainer.innerHTML = '<div class="status-item status-info">Excel 文件已上传，正在处理...</div>';
+            
+            // 开始轮询状态
+            pollStatus();
+        }
+    } catch (error) {
+        console.error('上传 Excel 文件时出错:', error);
+        statusContainer.innerHTML = `<div class="status-item status-error">上传 Excel 文件时出错: ${error.message}</div>`;
+    } finally {
+        uploadExcelBtn.disabled = false;
+        uploadExcelBtn.textContent = '上传并处理';
     }
 } 
