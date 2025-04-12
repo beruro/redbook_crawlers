@@ -5,6 +5,7 @@ from pydantic import BaseModel
 import os
 import sys
 from typing import List, Dict, Any, Optional
+from fastapi.staticfiles import StaticFiles
 
 # 将当前目录添加到Python路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -32,6 +33,10 @@ class ProcessStatus(BaseModel):
 # 全局变量存储处理状态
 processing_status = []
 result_file_path = None
+
+# 挂载静态文件
+frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend")
+app.mount("/frontend", StaticFiles(directory=frontend_dir), name="frontend")
 
 @app.post("/api/process")
 async def process_data(background_tasks: BackgroundTasks, urls: str = Form(...)):
@@ -141,23 +146,22 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
             os.remove(file_path)
         return {"error": f"处理文件时出错: {str(e)}"}
 
-# 添加根路径处理程序
+# 修改根路径处理程序，重定向到前端
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    html_content = """
+    return """
     <!DOCTYPE html>
     <html>
     <head>
         <title>小红书爬虫工具</title>
         <meta charset="UTF-8">
-        <meta http-equiv="refresh" content="0;url=/api/docs">
+        <meta http-equiv="refresh" content="0;url=/frontend/index.html">
     </head>
     <body>
-        <p>正在重定向到 API 文档...</p>
+        <p>正在重定向到小红书爬虫工具...</p>
     </body>
     </html>
     """
-    return html_content
 
 if __name__ == "__main__":
     import uvicorn
