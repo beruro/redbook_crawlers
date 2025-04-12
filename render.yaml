@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: xiaohongshu-scraper
+    env: python
+    buildCommand: pip install -r redbook_app/requirements.txt
+    startCommand: python redbook_app/run.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0 
