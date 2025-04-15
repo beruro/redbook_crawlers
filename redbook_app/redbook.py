@@ -60,7 +60,7 @@ def scrape_xiaohongshu_blogger(user_id):
         # 提取所需信息
         result = {
             "达人名称": user_data.get("data", {}).get("name", "未知"),
-            "id": user_id,
+            "id": user_data.get("data", {}).get("redId", "未知"),
             "主页链接": f"https://www.xiaohongshu.com/user/profile/{user_id}",
             "粉丝数(W)": round(user_data.get("data", {}).get("fansCount", 0) / 10000, 1),
         }
