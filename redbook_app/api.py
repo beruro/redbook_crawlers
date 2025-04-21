@@ -7,6 +7,10 @@ import sys
 from typing import List, Dict, Any, Optional
 from fastapi.staticfiles import StaticFiles
 import pandas as pd
+from datetime import datetime
+import threading
+import time
+import requests
 
 # 将当前目录添加到Python路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -55,6 +59,7 @@ async def process_data(background_tasks: BackgroundTasks, urls: str = Form(...))
     
     return {"message": "处理已开始，请查看状态"}
 
+# 修改 process_urls_background 函数
 async def process_urls_background(url_list):
     global processing_status, result_file_path
     
@@ -79,9 +84,9 @@ async def process_urls_background(url_list):
                 result_file_path = new_path
                 processing_status.append({"status": "success", "message": f"数据已保存到 {filename}"})
             else:
-                processing_status.append({"status": "error", "message": "保存 Excel 文件失败"})
+                processing_status.append({"status": "error", "message": "保存Excel文件失败"})
         except Exception as e:
-            processing_status.append({"status": "error", "message": f"保存 Excel 时出错: {str(e)}"})
+            processing_status.append({"status": "error", "message": f"保存Excel时出错: {str(e)}"})
     else:
         processing_status.append({"status": "warning", "message": "没有数据可保存"})
 
@@ -168,42 +173,70 @@ async def upload_excel_file(background_tasks: BackgroundTasks, file: UploadFile 
         
         # 读取 Excel 文件
         try:
+            # 添加详细日志
+            processing_status.append({"status": "info", "message": f"正在读取 Excel 文件: {file.filename}"})
+            
+            # 尝试读取 Excel 文件，不跳过任何行
             df = pd.read_excel(file_path)
+            
+            # 记录总行数
+            total_rows = len(df)
+            processing_status.append({"status": "info", "message": f"Excel 文件共有 {total_rows} 行数据"})
             
             # 检查列是否存在
             if column.upper() in df.columns:
                 # 使用列名
                 url_column = column.upper()
+                processing_status.append({"status": "info", "message": f"使用列名: {url_column}"})
             elif column.isalpha():
                 # 将列字母转换为索引 (A->0, B->1, etc.)
                 col_idx = ord(column.upper()) - ord('A')
                 if col_idx >= 0 and col_idx < len(df.columns):
                     url_column = df.columns[col_idx]
+                    processing_status.append({"status": "info", "message": f"使用列 {column} (列名: {url_column})"})
                 else:
-                    return {"error": f"列 {column} 不存在"}
+                    return {"error": f"列 {column} 不存在，文件只有 {len(df.columns)} 列"}
             else:
                 return {"error": "请提供有效的列名或列字母 (如 A, B, C...)"}
             
-            # 提取 URL
+            # 提取 URL - 更宽松的验证
             url_list = []
-            for url in df[url_column].dropna():
-                url = str(url).strip()
-                if url and "xiaohongshu" in url:
-                    url_list.append(url)
+            skipped_rows = 0
+            empty_rows = 0
+            
+            # 遍历所有行，不使用 dropna()
+            for i, row in df.iterrows():
+                if url_column in row and pd.notna(row[url_column]):
+                    url = str(row[url_column]).strip()
+                    if url:
+                        # 更宽松的 URL 验证，只要不是空字符串就接受
+                        url_list.append(url)
+                    else:
+                        empty_rows += 1
+                else:
+                    skipped_rows += 1
             
             # 删除临时文件
             os.remove(file_path)
             
+            # 添加详细日志
+            processing_status.append({"status": "info", "message": f"找到 {len(url_list)} 个 URL，跳过 {skipped_rows} 行空值，{empty_rows} 行空字符串"})
+            
             if not url_list:
-                return {"error": "Excel 文件中没有找到有效的小红书 URL"}
+                return {"error": "Excel 文件中没有找到有效的 URL"}
+            
+            # 显示前几个 URL 作为示例
+            sample_size = min(3, len(url_list))
+            samples = url_list[:sample_size]
+            processing_status.append({"status": "info", "message": f"URL 示例: {', '.join(samples)}"})
             
             # 在后台任务中处理 URL
-            processing_status.append({"status": "info", "message": f"从 Excel 文件中读取了 {len(url_list)} 个 URL"})
             background_tasks.add_task(process_urls_background, url_list)
             
-            return {"message": "Excel 文件已上传并开始处理，请查看状态"}
+            return {"message": f"Excel 文件已上传并开始处理 {len(url_list)} 个 URL，请查看状态"}
             
         except Exception as e:
+            processing_status.append({"status": "error", "message": f"读取 Excel 文件时出错: {str(e)}"})
             return {"error": f"读取 Excel 文件时出错: {str(e)}"}
             
     except Exception as e:
@@ -229,6 +262,33 @@ async def root():
     </html>
     """
 
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "timestamp": datetime.now().isoformat()}
+
+# 自动 ping 服务，防止 Heroku 休眠
+def ping_service():
+    app_url = os.environ.get('APP_URL')
+    if not app_url:
+        print("WARNING: APP_URL 环境变量未设置，自动 ping 功能不会工作")
+        return
+    
+    while True:
+        try:
+            response = requests.get(f"{app_url}/api/health")
+            print(f"自动 ping 服务: {response.status_code}")
+        except Exception as e:
+            print(f"自动 ping 失败: {e}")
+        
+        # 每 25 分钟 ping 一次，低于 Heroku 的 30 分钟休眠阈值
+        time.sleep(25 * 60)
+
+# 在主函数中启动 ping 线程
 if __name__ == "__main__":
+    # 启动自动 ping 线程
+    if os.environ.get('PREVENT_SLEEP') == 'true':
+        ping_thread = threading.Thread(target=ping_service, daemon=True)
+        ping_thread.start()
+    
     import uvicorn
-    uvicorn.run("api:app", host="0.0.0.0", port=8008, reload=True) 
+    uvicorn.run("api:app", host="0.0.0.0", port=int(os.environ.get('PORT', 8008)), reload=True) 

@@ -6,6 +6,44 @@ import os
 from datetime import datetime
 import time
 
+# 从环境变量获取 Cookie
+def get_cookies():
+    cookies_str = os.environ.get('XIAOHONGSHU_COOKIES')
+    if cookies_str:
+        try:
+            return json.loads(cookies_str)
+        except:
+            # 如果 JSON 解析失败，尝试解析为字典
+            cookies = {}
+            for item in cookies_str.split(';'):
+                if '=' in item:
+                    key, value = item.strip().split('=', 1)
+                    cookies[key] = value
+            return cookies
+    
+    # 如果环境变量不存在，使用默认 Cookie
+    return {
+        "a1": "19363212f4acl9fm3846czee2men7mekzmbtw3zgg30000352410",
+        "webId": "03a0d588d937b6c7f6f8a607e08e2415",
+        "gid": "yjqKqJy42fuiyjqKqJyJi6qu40S1ji6qY4KSDkkuddJ6d9q8IW6dTE888q2J4y88fYq0dWKq",
+        "x-user-id-pgy.xiaohongshu.com": "666fcc2de200000000000001",
+        "customerClientId": "195177604463666",
+        "abRequestId": "03a0d588d937b6c7f6f8a607e08e2415",
+        "x-user-id-creator.xiaohongshu.com": "5aae83144eacab32f473510e",
+        "web_session": "030037a07a83c92536a83f2eae204a75bf449d",
+        "loadts": "1744441044226",
+        "xsecappid": "ratlin",
+        "acw_tc": "0a0d068317452200818276972e7a25f4771165c751b843f8217c8f9418bf35",
+        "websectiga": "8886be45f388a1ee7bf611a69f3e174cae48f1ea02c0f8ec3256031b8be9c7ee",
+        "sec_poison_id": "2d0ec507-46c6-44a4-a3df-7878e57d11e4",
+        "customer-sso-sid": "68c517495664263468210246irrt863syga98fw1",
+        "solar.beaker.session.id": "AT-68c5174956642634658924436lrc2wxcewffhq7a",
+        "access-token-pgy.xiaohongshu.com": "customer.pgy.AT-68c5174956642634658924436lrc2wxcewffhq7a",
+        "access-token-pgy.beta.xiaohongshu.com": "customer.pgy.AT-68c5174956642634658924436lrc2wxcewffhq7a"
+    }
+
+cookies = get_cookies()
+
 def scrape_xiaohongshu_blogger(user_id):
     # 基础URL
     user_info_url = f"https://pgy.xiaohongshu.com/api/solar/cooperator/user/blogger/{user_id}"
@@ -23,27 +61,6 @@ def scrape_xiaohongshu_blogger(user_id):
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-origin',
-    }
-    
-    # 更新为你提供的cookies
-    cookies = {
-        'a1': '19363212f4acl9fm3846czee2men7mekzmbtw3zgg30000352410',
-        'webId': '03a0d588d937b6c7f6f8a607e08e2415',
-        'gid': 'yjqKqJy42fuiyjqKqJyJi6qu40S1ji6qY4KSDkkuddJ6d9q8IW6dTE888q2J4y88fYq0dWKq',
-        'x-user-id-pgy.xiaohongshu.com': '666fcc2de200000000000001',
-        'customerClientId': '195177604463666',
-        'abRequestId': '03a0d588d937b6c7f6f8a607e08e2415',
-        'x-user-id-creator.xiaohongshu.com': '5aae83144eacab32f473510e',
-        'web_session': '030037a07a83c92536a83f2eae204a75bf449d',
-        'webBuild': '4.62.3',
-        'customer-sso-sid': '68c517492071257034807078tpqnka1ouwvatxyd',
-        'solar.beaker.session.id': 'AT-68c517492071257034983558enillnlmciropcxs',
-        'access-token-pgy.xiaohongshu.com': 'customer.pgy.AT-68c517492071257034983558enillnlmciropcxs',
-        'access-token-pgy.beta.xiaohongshu.com': 'customer.pgy.AT-68c517492071257034983558enillnlmciropcxs',
-        'xsecappid': 'ratlin-carryon-merchant',
-        'loadts': '1744384832789',
-        'websectiga': 'f47eda31ec99545da40c2f731f0630efd2b0959e1dd10d5fedac3dce0bd1e04d',
-        'sec_poison_id': '00e8ded7-a261-429f-8da3-72c96d97eae6'
     }
     
     # 发送第一个请求获取用户信息
