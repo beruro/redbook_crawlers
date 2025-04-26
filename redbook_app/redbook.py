@@ -5,6 +5,7 @@ import pandas as pd
 import os
 from datetime import datetime
 import time
+import random
 
 # 从环境变量获取 Cookie
 def get_cookies():
@@ -129,7 +130,10 @@ def process_urls(urls):
     all_data = []
     results = []
     
-    for url in urls:
+    # 将多个URL分批处理
+    batch_size = 3  # 每批处理3个URL
+    
+    for i, url in enumerate(urls):
         url = url.strip()
         if not url:
             continue
@@ -138,8 +142,13 @@ def process_urls(urls):
         user_id = extract_user_id_from_url(url)
         
         if user_id:
-            log_message = f"正在处理URL: {url}, 用户ID: {user_id}"
+            log_message = f"正在处理URL {i+1}/{len(urls)}: {url}, 用户ID: {user_id}"
             results.append({"status": "processing", "message": log_message})
+            
+            # 使用更长的随机延时
+            delay = random.uniform(5, 10)  # 5-10秒的随机延时
+            results.append({"status": "info", "message": f"等待 {delay:.1f} 秒..."})
+            time.sleep(delay)
             
             # 爬取博主数据
             result = scrape_xiaohongshu_blogger(user_id)
@@ -150,8 +159,11 @@ def process_urls(urls):
             else:
                 results.append({"status": "error", "message": f"获取用户 {user_id} 数据失败"})
             
-            # 添加延时以避免请求过于频繁
-            time.sleep(2)
+            # 每处理一批URL，额外休息较长时间
+            if (i + 1) % batch_size == 0 and i < len(urls) - 1:
+                pause_time = random.uniform(20, 30)  # 20-30秒的休息时间
+                results.append({"status": "info", "message": f"批量处理暂停，休息 {pause_time:.1f} 秒..."})
+                time.sleep(pause_time)
         else:
             results.append({"status": "error", "message": f"无法从URL中提取用户ID: {url}"})
     
