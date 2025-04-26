@@ -1,1 +1,10 @@
--r redbook_app/requirements.txt 
+fastapi
+uvicorn
+jinja2
+python-multipart
+aiofiles
+pandas
+openpyxl>=3.0.0
+python-dotenv
+requests
+starlette 
