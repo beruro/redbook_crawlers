@@ -199,39 +199,47 @@
                 }
             });
             
-            // 轮询处理状态
+            // 在前端修改轮询间隔
             async function pollStatus() {
                 try {
-                    const response = await fetch('/status');
+                    // 增加轮询间隔到 5 秒
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    
+                    const response = await fetch(`${API_BASE_URL}/status`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
                     const data = await response.json();
                     
-                    // 处理状态更新
-                    if (data.status && data.status.length > 0) {
-                        updateLogEntries(data.status);
-                    }
+                    // 更新状态显示
+                    updateStatusDisplay(data.status);
                     
                     // 检查是否有文件可下载
                     if (data.file_path) {
-                        downloadLink.href = '/download';
                         downloadContainer.style.display = 'block';
-                        
-                        // 停止轮询
-                        // 启用按钮
-                        document.getElementById('submitBtn').disabled = false;
-                        document.getElementById('uploadBtn').disabled = false;
-                        return;
+                    } else {
+                        downloadContainer.style.display = 'none';
                     }
                     
-                    // 继续轮询
-                    setTimeout(pollStatus, 1000);
+                    // 继续轮询直到收到明确的完成或错误状态
+                    const isComplete = data.status.some(item => 
+                        item.status === 'success' && item.message.includes('数据已保存'));
+                    const hasError = data.status.some(item => 
+                        item.status === 'error' && !item.message.includes('获取状态出错'));
+                        
+                    if (!isComplete && !hasError) {
+                        setTimeout(pollStatus, 5000);
+                    }
                 } catch (error) {
-                    addLogEntry(`获取状态出错: ${error.message}`, 'error');
-                    // 启用按钮
-                    document.getElementById('submitBtn').disabled = false;
-                    document.getElementById('uploadBtn').disabled = false;
+                    console.error('获取状态时出错:', error);
+                    statusContainer.innerHTML += `<div class="status-item status-error">获取状态时出错: ${error.message}，将在10秒后重试</div>`;
+                    
+                    // 错误后使用更长的重试间隔
+                    setTimeout(pollStatus, 10000);
                 }
             }
-            
+
             // 更新日志条目
             function updateLogEntries(entries) {
                 // 获取当前日志条目数

@@ -92,10 +92,19 @@ async def process_urls_background(url_list):
 
 @app.get("/api/status")
 async def get_status():
-    return {
-        "status": processing_status,
-        "file_path": result_file_path
-    }
+    try:
+        return {
+            "status": processing_status,
+            "file_path": result_file_path
+        }
+    except Exception as e:
+        import traceback
+        error_detail = {
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+        print(f"获取状态时错误详情: {error_detail}")
+        return {"status": [{"status": "error", "message": f"获取状态出错: {str(e)}"}], "error_detail": error_detail}
 
 @app.get("/api/download")
 async def download_file():
