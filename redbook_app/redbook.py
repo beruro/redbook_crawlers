@@ -131,7 +131,7 @@ def process_urls(urls):
     results = []
     
     # 将多个URL分批处理
-    batch_size = 3  # 每批处理3个URL
+    batch_size = 5  # 每批处理5个URL
     
     for i, url in enumerate(urls):
         url = url.strip()
@@ -145,23 +145,26 @@ def process_urls(urls):
             log_message = f"正在处理URL {i+1}/{len(urls)}: {url}, 用户ID: {user_id}"
             results.append({"status": "processing", "message": log_message})
             
-            # 使用更长的随机延时
-            delay = random.uniform(5, 10)  # 5-10秒的随机延时
-            results.append({"status": "info", "message": f"等待 {delay:.1f} 秒..."})
-            time.sleep(delay)
+            try:
+                # 使用更合理的随机延时
+                delay = random.uniform(2, 5)  # 2-5秒的随机延时
+                results.append({"status": "info", "message": f"等待 {delay:.1f} 秒..."})
+                time.sleep(delay)
+                
+                # 爬取博主数据
+                result = scrape_xiaohongshu_blogger(user_id)
+                
+                if result:
+                    all_data.append(result)
+                    results.append({"status": "success", "message": f"成功获取 {result['达人名称']} 的数据"})
+                else:
+                    results.append({"status": "error", "message": f"获取用户 {user_id} 数据失败"})
+            except Exception as e:
+                results.append({"status": "error", "message": f"处理用户 {user_id} 时出错: {str(e)}"})
             
-            # 爬取博主数据
-            result = scrape_xiaohongshu_blogger(user_id)
-            
-            if result:
-                all_data.append(result)
-                results.append({"status": "success", "message": f"成功获取 {result['达人名称']} 的数据"})
-            else:
-                results.append({"status": "error", "message": f"获取用户 {user_id} 数据失败"})
-            
-            # 每处理一批URL，额外休息较长时间
+            # 每处理一批URL，额外休息较短时间
             if (i + 1) % batch_size == 0 and i < len(urls) - 1:
-                pause_time = random.uniform(20, 30)  # 20-30秒的休息时间
+                pause_time = random.uniform(5, 10)  # 5-10秒的休息时间
                 results.append({"status": "info", "message": f"批量处理暂停，休息 {pause_time:.1f} 秒..."})
                 time.sleep(pause_time)
         else:

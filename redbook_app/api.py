@@ -51,44 +51,61 @@ async def process_data(background_tasks: BackgroundTasks, urls: str = Form(...))
     processing_status = []
     result_file_path = None
     
-    # 分割URL
-    url_list = urls.strip().split('\n')
+    # 分割URL并过滤空行
+    url_list = [url.strip() for url in urls.strip().split('\n') if url.strip()]
+    
+    # 验证URL列表
+    if not url_list:
+        return {"error": "没有提供有效的URL"}
+    
+    # 添加初始状态信息
+    processing_status.append({"status": "info", "message": f"准备处理 {len(url_list)} 个URL..."})
     
     # 在后台任务中处理URL
     background_tasks.add_task(process_urls_background, url_list)
     
-    return {"message": "处理已开始，请查看状态"}
+    # 立即返回响应，不等待处理完成
+    return {"message": f"处理已开始，共 {len(url_list)} 个URL，请通过状态API查询进度", "url_count": len(url_list)}
 
 # 修改 process_urls_background 函数
 async def process_urls_background(url_list):
     global processing_status, result_file_path
     
-    # 更新状态为开始处理
-    if not any(item.get("message") == "开始处理URL..." for item in processing_status):
-        processing_status.append({"status": "info", "message": "开始处理URL..."})
-    
-    # 处理 URL
-    data_list, results = redbook.process_urls(url_list)
-    
-    # 更新处理结果
-    processing_status.extend(results)
-    
-    # 如果有数据，保存到 Excel
-    if data_list:
-        try:
-            filename = redbook.save_to_excel(data_list)
-            if filename:
-                # 移动文件到 results 目录
-                new_path = os.path.join("results", filename)
-                os.rename(filename, new_path)
-                result_file_path = new_path
-                processing_status.append({"status": "success", "message": f"数据已保存到 {filename}"})
-            else:
-                processing_status.append({"status": "error", "message": "保存Excel文件失败"})
-        except Exception as e:
-            processing_status.append({"status": "error", "message": f"保存Excel时出错: {str(e)}"})
-    else:
-        processing_status.append({"status": "warning", "message": "没有数据可保存"})
+    try:
+        # 更新状态为开始处理
+        processing_status.append({"status": "info", "message": f"开始处理 {len(url_list)} 个URL..."})
+        
+        # 处理 URL
+        data_list, results = redbook.process_urls(url_list)
+        
+        # 更新处理结果
+        processing_status.extend(results)
+        
+        # 如果有数据，保存到 Excel
+        if data_list:
+            try:
+                filename = redbook.save_to_excel(data_list)
+                if filename:
+                    # 移动文件到 results 目录
+                    new_path = os.path.join("results", filename)
+                    os.rename(filename, new_path)
+                    result_file_path = new_path
+                    processing_status.append({"status": "success", "message": f"数据已保存到 {filename}"})
+                else:
+                    processing_status.append({"status": "error", "message": "保存Excel文件失败"})
+            except Exception as e:
+                processing_status.append({"status": "error", "message": f"保存Excel时出错: {str(e)}"})
+        else:
+            processing_status.append({"status": "warning", "message": "没有数据可保存"})
+            
+        # 添加处理完成状态
+        processing_status.append({"status": "success", "message": "所有URL处理完成"})
+        
+    except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        processing_status.append({"status": "error", "message": f"处理URL时出错: {str(e)}"})
+        print(f"处理URL时错误详情: {error_detail}")
 
 @app.get("/api/status")
 async def get_status():
