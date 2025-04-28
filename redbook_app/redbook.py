@@ -24,24 +24,24 @@ def get_cookies():
     
     # 如果环境变量不存在，使用默认 Cookie
     return {
-        "a1": "19363212f4acl9fm3846czee2men7mekzmbtw3zgg30000352410",
-        "webId": "03a0d588d937b6c7f6f8a607e08e2415",
-        "gid": "yjqKqJy42fuiyjqKqJyJi6qu40S1ji6qY4KSDkkuddJ6d9q8IW6dTE888q2J4y88fYq0dWKq",
-        "x-user-id-pgy.xiaohongshu.com": "666fcc2de200000000000001",
-        "customerClientId": "195177604463666",
-        "abRequestId": "03a0d588d937b6c7f6f8a607e08e2415",
-        "x-user-id-creator.xiaohongshu.com": "5aae83144eacab32f473510e",
-        "web_session": "030037a07a83c92536a83f2eae204a75bf449d",
-        "loadts": "1744441044226",
-        "xsecappid": "ratlin",
-        "acw_tc": "0a0d068317452200818276972e7a25f4771165c751b843f8217c8f9418bf35",
-        "websectiga": "8886be45f388a1ee7bf611a69f3e174cae48f1ea02c0f8ec3256031b8be9c7ee",
-        "sec_poison_id": "2d0ec507-46c6-44a4-a3df-7878e57d11e4",
-        "customer-sso-sid": "68c517495664263468210246irrt863syga98fw1",
-        "solar.beaker.session.id": "AT-68c5174956642634658924436lrc2wxcewffhq7a",
-        "access-token-pgy.xiaohongshu.com": "customer.pgy.AT-68c5174956642634658924436lrc2wxcewffhq7a",
-        "access-token-pgy.beta.xiaohongshu.com": "customer.pgy.AT-68c5174956642634658924436lrc2wxcewffhq7a"
-    }
+  "a1": "19363212f4acl9fm3846czee2men7mekzmbtw3zgg30000352410",
+  "webId": "03a0d588d937b6c7f6f8a607e08e2415",
+  "gid": "yjqKqJy42fuiyjqKqJyJi6qu40S1ji6qY4KSDkkuddJ6d9q8IW6dTE888q2J4y88fYq0dWKq",
+  "x-user-id-pgy.xiaohongshu.com": "666fcc2de200000000000001",
+  "customerClientId": "195177604463666",
+  "abRequestId": "03a0d588d937b6c7f6f8a607e08e2415",
+  "x-user-id-creator.xiaohongshu.com": "5aae83144eacab32f473510e",
+  "web_session": "030037a07a83c92536a83f2eae204a75bf449d",
+  "loadts": "1744441044226",
+  "xsecappid": "ratlin",
+  "acw_tc": "0a0d0ad817458264860827857e432545f4f94a16fe7962eb3e1955490959d8",
+  "websectiga": "984412fef754c018e472127b8effd174be8a5d51061c991aadd200c69a2801d6",
+  "sec_poison_id": "7f1a9d83-9909-420b-8d1a-f8a368cdcfd9",
+  "solar.beaker.session.id": "AT-68c517498267937065584532y3pk6jll1t7pbvp3",
+  "access-token-pgy.xiaohongshu.com": "customer.pgy.AT-68c517498267937065584532y3pk6jll1t7pbvp3",
+  "access-token-pgy.beta.xiaohongshu.com": "customer.pgy.AT-68c517498267937065584532y3pk6jll1t7pbvp3",
+  "customer-sso-sid": "68c517498267937065145633qdkdwpzksgvtbjy6"
+}
 
 cookies = get_cookies()
 
