@@ -48,7 +48,7 @@ cookies = get_cookies()
 def scrape_xiaohongshu_blogger(user_id):
     # 基础URL
     user_info_url = f"https://pgy.xiaohongshu.com/api/solar/cooperator/user/blogger/{user_id}"
-    data_summary_url = f"https://pgy.xiaohongshu.com/api/solar/kol/data_v3/data_summary?userId={user_id}&business=1"
+    data_summary_url = f"https://pgy.xiaohongshu.com/api/pgy/kol/data/data_summary?userId={user_id}&business=1"
     
     # 两个请求共用的请求头
     headers = {
@@ -93,10 +93,10 @@ def scrape_xiaohongshu_blogger(user_id):
             like_collect = like_collect / 10000
         
         result["赞藏数(W)"] = round(like_collect, 1)
-        result["互动中位数"] = summary_data.get("data", {}).get("interactionMedian", "N/A")
+        result["互动中位数"] = summary_data.get("data", {}).get("mEngagementNum", "N/A")
         result["阅读中位数"] = summary_data.get("data", {}).get("readMedian", "N/A")
         result["曝光中位数"] = summary_data.get("data", {}).get("mAccumImpNum", "N/A")
-        result["外溢进店中位数"] = summary_data.get("data", {}).get("mCpuvNum", "N/A")
+        result["外溢进店中位数"] = summary_data.get("data", {}).get("mCpuvNumCompare", "N/A")
         
         return result
         
