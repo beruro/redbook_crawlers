@@ -95,6 +95,8 @@ def scrape_xiaohongshu_blogger(user_id):
         result["赞藏数(W)"] = round(like_collect, 1)
         result["互动中位数"] = summary_data.get("data", {}).get("interactionMedian", "N/A")
         result["阅读中位数"] = summary_data.get("data", {}).get("readMedian", "N/A")
+        result["曝光中位数"] = summary_data.get("data", {}).get("mAccumImpNum", "N/A")
+        result["外溢进店中位数"] = summary_data.get("data", {}).get("mCpuvNum", "N/A")
         
         return result
         
