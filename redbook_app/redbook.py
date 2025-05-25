@@ -96,8 +96,9 @@ def scrape_xiaohongshu_blogger(user_id):
         result["互动中位数"] = summary_data.get("data", {}).get("mEngagementNum", "N/A")
         result["阅读中位数"] = summary_data.get("data", {}).get("readMedian", "N/A")
         result["曝光中位数"] = summary_data.get("data", {}).get("mAccumImpNum", "N/A")
-        result["外溢进店中位数"] = summary_data.get("data", {}).get("mCpuvNumCompare", "N/A")
+        result["外溢进店中位数"] = summary_data.get("data", {}).get("mCpuvNum", "N/A")
         
+
         return result
         
     except requests.exceptions.RequestException as e:
