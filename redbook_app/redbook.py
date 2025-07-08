@@ -33,14 +33,14 @@ def get_cookies():
     "web_session": "030037a07a83c92536a83f2eae204a75bf449d",
     "x-user-id-pgy.xiaohongshu.com": "666fcc2de200000000000001",
     "xsecappid": "ratlin",
-    "acw_tc": "0a42442417513496350725163ef5dbbbb8aaaa018abbe37313e750732f8f39",
-    "websectiga": "9730ffafd96f2d09dc024760e253af6ab1feb0002827740b95a255ddf6847fc8",
-    "sec_poison_id": "9e95f0f4-7659-4e6d-9d6f-fb8325da2d0b",
-    "customer-sso-sid": "68c517521989831805977442ktffr0srgabcahse",
-    "solar.beaker.session.id": "AT-68c517521989831715207811x8x5qd7phfuub9gn",
-    "access-token-pgy.xiaohongshu.com": "customer.pgy.AT-68c517521989831715207811x8x5qd7phfuub9gn",
-    "access-token-pgy.beta.xiaohongshu.com": "customer.pgy.AT-68c517521989831715207811x8x5qd7phfuub9gn",
-    "loadts": "1751349735638"
+    "acw_tc": "0a4252f017519649795148460e2053198c7c66b53338a841366f61caf83dbc",
+    "websectiga": "3633fe24d49c7dd0eb923edc8205740f10fdb18b25d424d2a2322c6196d2a4ad",
+    "sec_poison_id": "0362f9fc-ca40-41ee-811a-0e68d7b5ace3",
+    "customer-sso-sid": "68c517524632800065666433dpua5giumdtygcwl",
+    "solar.beaker.session.id": "AT-68c517524632799970482350gghpvelcgbpza3vg",
+    "access-token-pgy.xiaohongshu.com": "customer.pgy.AT-68c517524632799970482350gghpvelcgbpza3vg",
+    "access-token-pgy.beta.xiaohongshu.com": "customer.pgy.AT-68c517524632799970482350gghpvelcgbpza3vg",
+    "loadts": "1751965099688"
 }
 
 cookies = get_cookies()
