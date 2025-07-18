@@ -292,6 +292,46 @@ async def root():
 async def health_check():
     return {"status": "ok", "timestamp": datetime.now().isoformat()}
 
+@app.post("/api/update-cookie")
+async def update_cookie(cookie_string: str = Form(...)):
+    """更新cookie"""
+    try:
+        # 解析cookie字符串
+        cookies = {}
+        for item in cookie_string.split(';'):
+            if '=' in item:
+                key, value = item.strip().split('=', 1)
+                cookies[key] = value
+        
+        # 更新redbook模块中的cookies
+        redbook.cookies = cookies
+        
+        processing_status.append({"status": "success", "message": f"Cookie已更新，包含 {len(cookies)} 个字段"})
+        
+        return {"message": "Cookie更新成功", "cookie_count": len(cookies)}
+    except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        processing_status.append({"status": "error", "message": f"Cookie更新失败: {str(e)}"})
+        return {"error": f"Cookie更新失败: {str(e)}", "traceback": error_detail}
+
+@app.get("/api/get-cookie")
+async def get_current_cookie():
+    """获取当前cookie"""
+    try:
+        current_cookies = redbook.cookies
+        # 将cookies转换为字符串格式
+        cookie_string = "; ".join([f"{key}={value}" for key, value in current_cookies.items()])
+        return {
+            "cookies": current_cookies, 
+            "cookie_string": cookie_string,
+            "cookie_count": len(current_cookies)
+        }
+    except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        return {"error": f"获取Cookie失败: {str(e)}", "traceback": error_detail}
+
 # 自动 ping 服务，防止 Heroku 休眠
 def ping_service():
     app_url = os.environ.get('APP_URL')

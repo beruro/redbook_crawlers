@@ -11,6 +11,17 @@
         <h1>小红书达人数据爬取工具</h1>
         
         <div class="card">
+            <h2>Cookie 设置</h2>
+            <p>请粘贴完整的小红书Cookie字符串（以分号分隔的格式）</p>
+            <textarea id="cookieInput" rows="6" placeholder="a1=xxx; webId=xxx; gid=xxx; ..." style="font-family: monospace; font-size: 12px;"></textarea>
+            <div class="button-group">
+                <button id="updateCookieBtn" class="primary-btn">更新Cookie</button>
+                <button id="getCurrentCookieBtn" class="secondary-btn">查看当前Cookie</button>
+            </div>
+            <div id="cookieStatus" style="margin-top: 10px;"></div>
+        </div>
+        
+        <div class="card">
             <h2>输入小红书URL</h2>
             <p>每行一个URL，支持笔记URL和用户主页URL</p>
             <textarea id="urls" rows="10" placeholder="请输入小红书URL，每行一个"></textarea>

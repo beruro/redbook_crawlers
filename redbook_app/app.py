@@ -8,6 +8,7 @@ from typing import List
 import asyncio
 from pydantic import BaseModel
 import sys
+import json
 # 将当前目录添加到Python路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import redbook
@@ -42,7 +43,7 @@ result_file_path = None
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.post("/process")
+@app.post("/api/process")
 async def process_data(background_tasks: BackgroundTasks, urls: str = Form(...)):
     global processing_status, result_file_path
     
@@ -87,14 +88,14 @@ async def process_urls_background(url_list):
     else:
         processing_status.append({"status": "warning", "message": "没有数据可保存"})
 
-@app.get("/status")
+@app.get("/api/status")
 async def get_status():
     return {
         "status": processing_status,
         "file_path": result_file_path
     }
 
-@app.get("/download")
+@app.get("/api/download")
 async def download_file():
     if result_file_path and os.path.exists(result_file_path):
         return FileResponse(
@@ -104,7 +105,7 @@ async def download_file():
         )
     return {"error": "文件不存在"}
 
-@app.post("/upload")
+@app.post("/api/upload")
 async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     global processing_status, result_file_path
     
@@ -128,6 +129,35 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
     background_tasks.add_task(process_urls_background, url_list)
     
     return {"message": "文件已上传并开始处理，请查看状态"}
+
+@app.post("/api/update-cookie")
+async def update_cookie(cookie_string: str = Form(...)):
+    """更新cookie"""
+    try:
+        # 解析cookie字符串
+        cookies = {}
+        for item in cookie_string.split(';'):
+            if '=' in item:
+                key, value = item.strip().split('=', 1)
+                cookies[key] = value
+        
+        # 更新redbook模块中的cookies
+        redbook.cookies = cookies
+        
+        return {"message": "Cookie更新成功", "cookies": cookies}
+    except Exception as e:
+        return {"error": f"Cookie更新失败: {str(e)}"}
+
+@app.get("/api/get-cookie")
+async def get_current_cookie():
+    """获取当前cookie"""
+    try:
+        current_cookies = redbook.cookies
+        # 将cookies转换为字符串格式
+        cookie_string = "; ".join([f"{key}={value}" for key, value in current_cookies.items()])
+        return {"cookies": current_cookies, "cookie_string": cookie_string}
+    except Exception as e:
+        return {"error": f"获取Cookie失败: {str(e)}"}
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8008, reload=True) 

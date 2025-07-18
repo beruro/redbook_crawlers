@@ -17,12 +17,22 @@ const excelUpload = document.getElementById('excelUpload');
 const columnInput = document.getElementById('columnInput');
 const uploadExcelBtn = document.getElementById('uploadExcelBtn');
 
+// Cookie相关DOM元素
+const cookieInput = document.getElementById('cookieInput');
+const updateCookieBtn = document.getElementById('updateCookieBtn');
+const getCurrentCookieBtn = document.getElementById('getCurrentCookieBtn');
+const cookieStatus = document.getElementById('cookieStatus');
+
 // 事件监听器
 processBtn.addEventListener('click', processUrls);
 clearBtn.addEventListener('click', clearUrls);
 uploadBtn.addEventListener('click', uploadFile);
 downloadBtn.addEventListener('click', downloadResult);
 uploadExcelBtn.addEventListener('click', uploadExcelFile);
+
+// Cookie相关事件监听器
+updateCookieBtn.addEventListener('click', updateCookie);
+getCurrentCookieBtn.addEventListener('click', getCurrentCookie);
 
 // 处理URL
 async function processUrls() {
@@ -211,5 +221,71 @@ async function uploadExcelFile() {
     } finally {
         uploadExcelBtn.disabled = false;
         uploadExcelBtn.textContent = '上传并处理';
+    }
+} 
+
+// 更新Cookie
+async function updateCookie() {
+    const cookieString = cookieInput.value.trim();
+    if (!cookieString) {
+        alert('请输入Cookie字符串');
+        return;
+    }
+    
+    try {
+        updateCookieBtn.disabled = true;
+        updateCookieBtn.textContent = '更新中...';
+        
+        const formData = new FormData();
+        formData.append('cookie_string', cookieString);
+        
+        const response = await fetch(`${API_BASE_URL}/update-cookie`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            cookieStatus.innerHTML = `<div class="status-item status-error">${data.error}</div>`;
+        } else {
+            cookieStatus.innerHTML = `<div class="status-item status-success">${data.message}</div>`;
+            setTimeout(() => {
+                cookieStatus.innerHTML = '';
+            }, 3000);
+        }
+    } catch (error) {
+        console.error('更新Cookie时出错:', error);
+        cookieStatus.innerHTML = `<div class="status-item status-error">更新Cookie时出错: ${error.message}</div>`;
+    } finally {
+        updateCookieBtn.disabled = false;
+        updateCookieBtn.textContent = '更新Cookie';
+    }
+}
+
+// 获取当前Cookie
+async function getCurrentCookie() {
+    try {
+        getCurrentCookieBtn.disabled = true;
+        getCurrentCookieBtn.textContent = '获取中...';
+        
+        const response = await fetch(`${API_BASE_URL}/get-cookie`);
+        const data = await response.json();
+        
+        if (data.error) {
+            cookieStatus.innerHTML = `<div class="status-item status-error">${data.error}</div>`;
+        } else {
+            cookieInput.value = data.cookie_string;
+            cookieStatus.innerHTML = `<div class="status-item status-success">当前Cookie已显示在输入框中</div>`;
+            setTimeout(() => {
+                cookieStatus.innerHTML = '';
+            }, 3000);
+        }
+    } catch (error) {
+        console.error('获取Cookie时出错:', error);
+        cookieStatus.innerHTML = `<div class="status-item status-error">获取Cookie时出错: ${error.message}</div>`;
+    } finally {
+        getCurrentCookieBtn.disabled = false;
+        getCurrentCookieBtn.textContent = '查看当前Cookie';
     }
 } 
