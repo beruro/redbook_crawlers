@@ -86,11 +86,29 @@ async def process_urls_background(url_list):
             try:
                 filename = redbook.save_to_excel(data_list)
                 if filename:
-                    # 移动文件到 results 目录
-                    new_path = os.path.join("results", filename)
-                    os.rename(filename, new_path)
-                    result_file_path = new_path
-                    processing_status.append({"status": "success", "message": f"数据已保存到 {filename}"})
+                    # save_to_excel 现在已经处理了文件保存和路径，不需要再移动
+                    # 查找实际保存的文件路径
+                    possible_paths = [
+                        os.path.join("results", filename),
+                        filename,
+                        os.path.join("/tmp", filename),
+                        os.path.join(os.getcwd(), filename)
+                    ]
+                    
+                    actual_path = None
+                    for path in possible_paths:
+                        if os.path.exists(path):
+                            actual_path = path
+                            break
+                    
+                    if actual_path:
+                        result_file_path = actual_path
+                        processing_status.append({"status": "success", "message": f"数据已保存到 {filename}"})
+                        print(f"文件实际保存位置: {actual_path}")
+                    else:
+                        processing_status.append({"status": "warning", "message": f"文件已保存但路径未知: {filename}"})
+                        # 即使路径未知，也设置文件名，下载API会智能查找
+                        result_file_path = filename
                 else:
                     processing_status.append({"status": "error", "message": "保存Excel文件失败"})
             except Exception as e:
