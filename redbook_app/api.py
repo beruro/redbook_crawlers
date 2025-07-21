@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, BackgroundTasks, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 import os
 import sys
@@ -11,6 +11,7 @@ from datetime import datetime
 import threading
 import time
 import requests
+import io
 
 # 将当前目录添加到Python路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -38,6 +39,10 @@ class ProcessStatus(BaseModel):
 # 全局变量存储处理状态
 processing_status = []
 result_file_path = None
+
+# 添加全局变量存储最新的数据（内存方案）
+latest_scraped_data = None
+latest_scrape_timestamp = None
 
 # 挂载静态文件
 frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend")
@@ -83,7 +88,14 @@ async def process_urls_background(url_list):
         
         # 如果有数据，保存到 Excel
         if data_list:
+            # 保存到全局变量（内存方案）
+            global latest_scraped_data, latest_scrape_timestamp
+            latest_scraped_data = data_list
+            latest_scrape_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            
             try:
+                processing_status.append({"status": "info", "message": f"准备保存 {len(data_list)} 条数据到Excel..."})
+                
                 filename = redbook.save_to_excel(data_list)
                 if filename:
                     # save_to_excel 现在已经处理了文件保存和路径，不需要再移动
@@ -92,25 +104,34 @@ async def process_urls_background(url_list):
                         os.path.join("results", filename),
                         filename,
                         os.path.join("/tmp", filename),
-                        os.path.join(os.getcwd(), filename)
+                        os.path.join(os.getcwd(), filename),
+                        os.path.join("/app", filename),
+                        os.path.join(os.path.expanduser("~"), filename)
                     ]
                     
                     actual_path = None
                     for path in possible_paths:
                         if os.path.exists(path):
                             actual_path = path
+                            file_size = os.path.getsize(path)
+                            print(f"找到文件: {path}, 大小: {file_size} 字节")
                             break
                     
                     if actual_path:
                         result_file_path = actual_path
-                        processing_status.append({"status": "success", "message": f"数据已保存到 {filename}"})
+                        processing_status.append({"status": "success", "message": f"✅ 数据已成功保存到 {filename}"})
+                        processing_status.append({"status": "info", "message": f"📍 文件位置: {actual_path}"})
                         print(f"文件实际保存位置: {actual_path}")
                     else:
-                        processing_status.append({"status": "warning", "message": f"文件已保存但路径未知: {filename}"})
-                        # 即使路径未知，也设置文件名，下载API会智能查找
-                        result_file_path = filename
+                        # 文件保存失败，但我们有内存备份
+                        processing_status.append({"status": "warning", "message": f"⚠️ 文件保存失败，但数据已保存到内存"})
+                        processing_status.append({"status": "info", "message": "📥 可以使用内存下载功能"})
+                        result_file_path = None
                 else:
-                    processing_status.append({"status": "error", "message": "保存Excel文件失败"})
+                    # 文件保存完全失败，但我们有内存备份
+                    processing_status.append({"status": "warning", "message": "⚠️ 文件保存失败，但数据已保存到内存"})
+                    processing_status.append({"status": "info", "message": "📥 可以使用内存下载功能"})
+                    result_file_path = None
             except Exception as e:
                 processing_status.append({"status": "error", "message": f"保存Excel时出错: {str(e)}"})
         else:
@@ -460,6 +481,84 @@ async def get_current_cookie():
         import traceback
         error_detail = traceback.format_exc()
         return {"error": f"获取Cookie失败: {str(e)}", "traceback": error_detail}
+
+@app.get("/api/download-memory")
+async def download_memory():
+    """通过内存流直接下载Excel，完全绕过文件系统"""
+    global latest_scraped_data, latest_scrape_timestamp
+    
+    if not latest_scraped_data:
+        return {"error": "没有可下载的数据", "message": "请先爬取数据"}
+    
+    try:
+        # 创建DataFrame
+        df = pd.DataFrame(latest_scraped_data)
+        
+        # 生成文件名
+        timestamp = latest_scrape_timestamp or datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"小红书达人数据_{timestamp}.xlsx"
+        
+        # 创建内存流
+        output = io.BytesIO()
+        
+        # 直接写入内存流
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='达人数据')
+        
+        # 重置流位置
+        output.seek(0)
+        
+        # 返回文件流
+        return StreamingResponse(
+            io.BytesIO(output.read()),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        return {"error": f"生成Excel失败: {str(e)}"}
+
+@app.get("/api/download-base64")
+async def download_base64():
+    """返回Base64编码的Excel数据作为终极备用方案"""
+    global latest_scraped_data, latest_scrape_timestamp
+    
+    if not latest_scraped_data:
+        return {"error": "没有可下载的数据", "message": "请先爬取数据"}
+    
+    try:
+        import base64
+        
+        # 创建DataFrame
+        df = pd.DataFrame(latest_scraped_data)
+        
+        # 生成文件名
+        timestamp = latest_scrape_timestamp or datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"小红书达人数据_{timestamp}.xlsx"
+        
+        # 创建内存流
+        output = io.BytesIO()
+        
+        # 写入Excel
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='达人数据')
+        
+        # 获取二进制数据
+        excel_data = output.getvalue()
+        
+        # 编码为Base64
+        base64_data = base64.b64encode(excel_data).decode('utf-8')
+        
+        return {
+            "success": True,
+            "filename": filename,
+            "data": base64_data,
+            "size": len(excel_data),
+            "message": "Base64数据传输成功"
+        }
+        
+    except Exception as e:
+        return {"error": f"生成Base64数据失败: {str(e)}"}
 
 @app.get("/api/validate-cookie")
 async def validate_cookie():

@@ -228,7 +228,77 @@ function updateStatusDisplay(statusList) {
 // 下载结果
 async function downloadResult() {
     try {
-        window.location.href = `${API_BASE_URL}/download`;
+        // 首先尝试常规文件下载
+        const response = await fetch(`${API_BASE_URL}/download`);
+        
+        if (response.ok && response.headers.get('content-type')?.includes('sheet')) {
+            // 成功获取到Excel文件
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '小红书达人数据.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            return;
+        }
+        
+        // 如果常规下载失败，尝试内存下载
+        console.log('常规下载失败，尝试内存下载...');
+        const memoryResponse = await fetch(`${API_BASE_URL}/download-memory`);
+        
+        if (memoryResponse.ok) {
+            const blob = await memoryResponse.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '小红书达人数据.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            // 显示成功消息
+            statusContainer.innerHTML += `<div class="status-item status-success">✅ 通过内存下载成功！</div>`;
+            return;
+        }
+        
+        // 最后尝试Base64下载
+        console.log('内存下载失败，尝试Base64下载...');
+        const base64Response = await fetch(`${API_BASE_URL}/download-base64`);
+        const base64Data = await base64Response.json();
+        
+        if (base64Data.success) {
+            // 将Base64转换为Blob并下载
+            const byteCharacters = atob(base64Data.data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { 
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+            });
+            
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = base64Data.filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            statusContainer.innerHTML += `<div class="status-item status-success">✅ 通过Base64下载成功！</div>`;
+            return;
+        }
+        
+        // 所有方法都失败了
+        const errorData = base64Data.error || memoryResponse.error || '所有下载方式都失败了';
+        alert(`下载失败: ${errorData}`);
+        
     } catch (error) {
         console.error('下载文件时出错:', error);
         alert(`下载文件时出错: ${error.message}`);

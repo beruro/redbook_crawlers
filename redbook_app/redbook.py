@@ -179,50 +179,105 @@ def process_urls(urls):
 def save_to_excel(data_list):
     """保存数据到Excel并返回文件路径"""
     if not data_list:
+        print("❌ 没有数据可保存")
         return None
         
+    print(f"📊 准备保存 {len(data_list)} 条数据到Excel")
+    
     # 添加时间戳到文件名
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"小红书达人数据_{timestamp}.xlsx"
     
     # 尝试多个保存路径（适配云平台）
     save_paths = [
-        os.path.join("results", filename),  # results目录
-        filename,                           # 当前目录
-        os.path.join("/tmp", filename),     # 临时目录（云平台）
-        os.path.join(os.getcwd(), filename) # 明确的当前工作目录
+        os.path.join("results", filename),      # results目录
+        filename,                               # 当前目录
+        os.path.join("/tmp", filename),         # 临时目录（云平台）
+        os.path.join(os.getcwd(), filename),    # 明确的当前工作目录
+        os.path.join("/app", filename),         # 应用根目录
+        os.path.join(os.path.expanduser("~"), filename)  # 用户目录
     ]
     
     # 创建DataFrame
-    df = pd.DataFrame(data_list)
+    try:
+        df = pd.DataFrame(data_list)
+        print(f"✅ DataFrame创建成功，形状: {df.shape}")
+        
+        # 打印数据预览
+        print("📋 数据预览:")
+        for i, item in enumerate(data_list[:2]):  # 只显示前2条
+            print(f"  {i+1}. {item.get('达人名称', '未知')}: {item.get('粉丝数(W)', 'N/A')}W粉丝")
+            
+    except Exception as e:
+        print(f"❌ 创建DataFrame失败: {e}")
+        return None
     
     saved_path = None
+    save_errors = []
     
     # 尝试保存到不同路径
-    for save_path in save_paths:
+    for i, save_path in enumerate(save_paths):
         try:
+            print(f"🔄 尝试保存路径 {i+1}/{len(save_paths)}: {save_path}")
+            
             # 确保目录存在
             directory = os.path.dirname(save_path)
             if directory and not os.path.exists(directory):
+                print(f"📁 创建目录: {directory}")
                 os.makedirs(directory, exist_ok=True)
             
             # 保存到Excel
-            df.to_excel(save_path, index=False)
+            df.to_excel(save_path, index=False, engine='openpyxl')
+            print(f"💾 Excel保存操作完成")
             
             # 验证文件是否成功创建
-            if os.path.exists(save_path) and os.path.getsize(save_path) > 0:
-                saved_path = save_path
-                print(f"文件成功保存到: {save_path}")
-                break
+            if os.path.exists(save_path):
+                file_size = os.path.getsize(save_path)
+                print(f"✅ 文件验证成功: {save_path}")
+                print(f"📏 文件大小: {file_size} 字节")
+                
+                if file_size > 1024:  # 至少1KB
+                    saved_path = save_path
+                    print(f"🎉 文件成功保存到: {save_path}")
+                    break
+                else:
+                    print(f"⚠️ 文件太小 ({file_size} 字节)，可能保存失败")
+                    save_errors.append(f"{save_path}: 文件太小")
             else:
-                print(f"文件保存失败或为空: {save_path}")
+                print(f"❌ 文件不存在: {save_path}")
+                save_errors.append(f"{save_path}: 文件不存在")
                 
         except Exception as e:
-            print(f"保存到 {save_path} 失败: {e}")
+            error_msg = f"保存到 {save_path} 失败: {e}"
+            print(f"❌ {error_msg}")
+            save_errors.append(error_msg)
             continue
     
     if saved_path:
+        print(f"🏆 最终成功保存: {saved_path}")
         return os.path.basename(saved_path)  # 返回文件名
     else:
-        print("所有保存路径都失败了")
+        print("💥 所有保存路径都失败了!")
+        print("📋 错误详情:")
+        for error in save_errors:
+            print(f"  - {error}")
+        
+        # 尝试获取更多调试信息
+        print("🔍 系统信息:")
+        print(f"  当前工作目录: {os.getcwd()}")
+        print(f"  可写性测试...")
+        
+        for path in ["/tmp", ".", "/app"]:
+            try:
+                test_file = os.path.join(path, "test_write.tmp")
+                with open(test_file, 'w') as f:
+                    f.write("test")
+                if os.path.exists(test_file):
+                    os.remove(test_file)
+                    print(f"  ✅ {path} 可写")
+                else:
+                    print(f"  ❌ {path} 写入失败")
+            except Exception as e:
+                print(f"  ❌ {path} 不可写: {e}")
+        
         return None
