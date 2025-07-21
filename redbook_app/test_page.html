@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 小红书爬虫工具 - 测试页面</h1>
+    
+    <div class="test-card">
+        <h2>✅ HTML 加载成功</h2>
+        <p>如果你能看到这个页面，说明HTML文件正常加载。</p>
+    </div>
+    
+    <div class="test-card">
+        <h2>🎨 CSS 测试</h2>
+        <p class="success">如果这行文字是绿色的，说明CSS正常工作。</p>
+        <p class="error">如果这行文字是红色的，说明CSS正常工作。</p>
+    </div>
+    
+    <div class="test-card">
+        <h2>🔧 JavaScript 测试</h2>
+        <button onclick="testJS()">点击测试JS</button>
+        <p id="jsResult">等待测试...</p>
+    </div>
+    
+    <div class="test-card">
+        <h2>🔗 链接测试</h2>
+        <p><a href="/frontend/index.html">前往主页面</a></p>
+        <p><a href="/api/status">API状态测试</a></p>
+    </div>
+    
+    <script>
+        function testJS() {
+            document.getElementById('jsResult').innerHTML = '<span class="success">✅ JavaScript工作正常！</span>';
+            
+            // 测试API连接
+            fetch('/api/get-cookie')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('jsResult').innerHTML += '<br><span class="success">✅ API连接正常！</span>';
+                })
+                .catch(error => {
+                    document.getElementById('jsResult').innerHTML += '<br><span class="error">❌ API连接失败: ' + error.message + '</span>';
+                });
+        }
+        
+        // 页面加载时自动测试
+        window.onload = function() {
+            document.getElementById('jsResult').innerHTML = '<span class="success">✅ JavaScript已加载</span>';
+        }
+    </script>
+</body>
+</html> 

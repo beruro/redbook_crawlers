@@ -185,9 +185,44 @@ def save_to_excel(data_list):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"小红书达人数据_{timestamp}.xlsx"
     
+    # 尝试多个保存路径（适配云平台）
+    save_paths = [
+        os.path.join("results", filename),  # results目录
+        filename,                           # 当前目录
+        os.path.join("/tmp", filename),     # 临时目录（云平台）
+        os.path.join(os.getcwd(), filename) # 明确的当前工作目录
+    ]
+    
     # 创建DataFrame
     df = pd.DataFrame(data_list)
     
-    # 保存到Excel
-    df.to_excel(filename, index=False)
-    return filename
+    saved_path = None
+    
+    # 尝试保存到不同路径
+    for save_path in save_paths:
+        try:
+            # 确保目录存在
+            directory = os.path.dirname(save_path)
+            if directory and not os.path.exists(directory):
+                os.makedirs(directory, exist_ok=True)
+            
+            # 保存到Excel
+            df.to_excel(save_path, index=False)
+            
+            # 验证文件是否成功创建
+            if os.path.exists(save_path) and os.path.getsize(save_path) > 0:
+                saved_path = save_path
+                print(f"文件成功保存到: {save_path}")
+                break
+            else:
+                print(f"文件保存失败或为空: {save_path}")
+                
+        except Exception as e:
+            print(f"保存到 {save_path} 失败: {e}")
+            continue
+    
+    if saved_path:
+        return os.path.basename(saved_path)  # 返回文件名
+    else:
+        print("所有保存路径都失败了")
+        return None

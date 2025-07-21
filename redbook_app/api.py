@@ -154,36 +154,95 @@ async def get_status():
 async def download_file():
     global result_file_path
     
-    # 首先检查全局变量中的文件路径
-    if result_file_path and os.path.exists(result_file_path):
-        return FileResponse(
-            path=result_file_path,
-            filename=os.path.basename(result_file_path),
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+    # 定义可能的文件查找路径
+    search_paths = [
+        "results",           # results目录
+        ".",                # 当前目录
+        "/tmp",             # 临时目录（云平台常用）
+        os.getcwd(),        # 当前工作目录
+        os.path.dirname(os.path.abspath(__file__))  # 脚本所在目录
+    ]
     
-    # 如果全局变量中没有，尝试查找results目录中最新的文件
+    found_files = []
+    
+    # 1. 首先检查全局变量中的文件路径
+    if result_file_path:
+        if os.path.exists(result_file_path):
+            return FileResponse(
+                path=result_file_path,
+                filename=os.path.basename(result_file_path),
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        else:
+            print(f"全局路径文件不存在: {result_file_path}")
+    
+    # 2. 在所有可能的路径中查找Excel文件
+    for search_path in search_paths:
+        try:
+            if os.path.exists(search_path) and os.path.isdir(search_path):
+                excel_files = []
+                for file in os.listdir(search_path):
+                    if file.endswith('.xlsx') and '小红书达人数据' in file:
+                        full_path = os.path.join(search_path, file)
+                        if os.path.isfile(full_path):
+                            excel_files.append(full_path)
+                
+                found_files.extend(excel_files)
+                print(f"在 {search_path} 中找到 {len(excel_files)} 个Excel文件")
+                
+        except Exception as e:
+            print(f"搜索路径 {search_path} 时出错: {e}")
+            continue
+    
+    # 3. 如果找到文件，选择最新的
+    if found_files:
+        # 按修改时间排序，选择最新的
+        try:
+            latest_file = max(found_files, key=lambda x: os.path.getmtime(x))
+            print(f"选择最新文件: {latest_file}")
+            
+            # 更新全局变量
+            result_file_path = latest_file
+            
+            return FileResponse(
+                path=latest_file,
+                filename=os.path.basename(latest_file),
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        except Exception as e:
+            print(f"处理找到的文件时出错: {e}")
+    
+    # 4. 如果还是没找到，尝试查找任何Excel文件
     try:
-        results_dir = "results"
-        if os.path.exists(results_dir):
-            excel_files = [f for f in os.listdir(results_dir) if f.endswith('.xlsx')]
-            if excel_files:
-                # 按修改时间排序，获取最新的文件
-                excel_files.sort(key=lambda x: os.path.getmtime(os.path.join(results_dir, x)), reverse=True)
-                latest_file = os.path.join(results_dir, excel_files[0])
-                
-                # 更新全局变量
-                result_file_path = latest_file
-                
-                return FileResponse(
-                    path=latest_file,
-                    filename=os.path.basename(latest_file),
-                    media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
+        for search_path in search_paths:
+            if os.path.exists(search_path) and os.path.isdir(search_path):
+                all_excel = [f for f in os.listdir(search_path) if f.endswith('.xlsx')]
+                if all_excel:
+                    latest_excel = max([os.path.join(search_path, f) for f in all_excel], 
+                                     key=lambda x: os.path.getmtime(x))
+                    print(f"找到备选Excel文件: {latest_excel}")
+                    return FileResponse(
+                        path=latest_excel,
+                        filename=os.path.basename(latest_excel),
+                        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
     except Exception as e:
-        print(f"查找结果文件时出错: {e}")
+        print(f"查找备选文件时出错: {e}")
     
-    return {"error": "文件不存在", "message": "请确保数据处理已完成"}
+    # 5. 实在找不到，返回详细的调试信息
+    debug_info = {
+        "error": "文件不存在", 
+        "message": "请确保数据处理已完成",
+        "debug": {
+            "result_file_path": result_file_path,
+            "current_directory": os.getcwd(),
+            "searched_paths": search_paths,
+            "found_files_count": len(found_files),
+            "found_files": found_files[:3] if found_files else [],  # 只显示前3个避免响应过大
+        }
+    }
+    
+    return debug_info
 
 @app.post("/api/upload")
 async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
