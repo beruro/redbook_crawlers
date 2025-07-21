@@ -110,28 +110,79 @@ async def process_urls_background(url_list):
 @app.get("/api/status")
 async def get_status():
     try:
-        return {
+        # 确保processing_status是一个列表
+        if not isinstance(processing_status, list):
+            global processing_status
+            processing_status = []
+        
+        # 确保result_file_path是字符串或None
+        file_path = result_file_path if isinstance(result_file_path, str) else None
+        
+        # 构建响应数据
+        response_data = {
             "status": processing_status,
-            "file_path": result_file_path
+            "file_path": file_path,
+            "timestamp": datetime.now().isoformat()
         }
+        
+        # 验证响应数据可以序列化为JSON
+        import json
+        json.dumps(response_data, ensure_ascii=False)
+        
+        return response_data
+        
     except Exception as e:
         import traceback
-        error_detail = {
-            "error": str(e),
-            "traceback": traceback.format_exc()
-        }
+        error_detail = traceback.format_exc()
         print(f"获取状态时错误详情: {error_detail}")
-        return {"status": [{"status": "error", "message": f"获取状态出错: {str(e)}"}], "error_detail": error_detail}
+        
+        # 即使出错，也返回一个有效的JSON响应
+        emergency_response = {
+            "status": [
+                {"status": "error", "message": f"获取状态出错: {str(e)}"},
+                {"status": "info", "message": "如果数据处理已完成，请尝试下载结果"}
+            ],
+            "file_path": result_file_path if isinstance(result_file_path, str) else None,
+            "error_detail": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        return emergency_response
 
 @app.get("/api/download")
 async def download_file():
+    global result_file_path
+    
+    # 首先检查全局变量中的文件路径
     if result_file_path and os.path.exists(result_file_path):
         return FileResponse(
             path=result_file_path,
             filename=os.path.basename(result_file_path),
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-    return {"error": "文件不存在"}
+    
+    # 如果全局变量中没有，尝试查找results目录中最新的文件
+    try:
+        results_dir = "results"
+        if os.path.exists(results_dir):
+            excel_files = [f for f in os.listdir(results_dir) if f.endswith('.xlsx')]
+            if excel_files:
+                # 按修改时间排序，获取最新的文件
+                excel_files.sort(key=lambda x: os.path.getmtime(os.path.join(results_dir, x)), reverse=True)
+                latest_file = os.path.join(results_dir, excel_files[0])
+                
+                # 更新全局变量
+                result_file_path = latest_file
+                
+                return FileResponse(
+                    path=latest_file,
+                    filename=os.path.basename(latest_file),
+                    media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+    except Exception as e:
+        print(f"查找结果文件时出错: {e}")
+    
+    return {"error": "文件不存在", "message": "请确保数据处理已完成"}
 
 @app.post("/api/upload")
 async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
@@ -331,6 +382,158 @@ async def get_current_cookie():
         import traceback
         error_detail = traceback.format_exc()
         return {"error": f"获取Cookie失败: {str(e)}", "traceback": error_detail}
+
+@app.get("/api/validate-cookie")
+async def validate_cookie():
+    """验证cookie有效性和获取信息"""
+    try:
+        current_cookies = redbook.cookies
+        
+        # 分析cookie信息
+        cookie_info = analyze_cookie_expiry(current_cookies)
+        
+        # 测试cookie是否有效
+        validity_result = await test_cookie_validity(current_cookies)
+        
+        return {
+            "is_valid": validity_result.get("is_valid"),
+            "test_message": validity_result.get("message", ""),
+            "test_results": validity_result.get("test_results", []),
+            "cookie_info": cookie_info,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        return {"error": f"验证Cookie失败: {str(e)}", "traceback": error_detail}
+
+async def test_cookie_validity(cookies):
+    """通过实际API调用测试cookie是否有效"""
+    try:
+        # 测试几个不同的API端点来验证cookie有效性
+        test_endpoints = [
+            {
+                "url": "https://pgy.xiaohongshu.com/api/solar/cooperator/user/profile",
+                "description": "用户配置信息"
+            },
+            {
+                "url": "https://pgy.xiaohongshu.com/api/pgy/kol/search/bloggers",
+                "description": "博主搜索API"
+            }
+        ]
+        
+        headers = {
+            'accept': 'application/json, text/plain, */*',
+            'accept-language': 'zh-CN,zh;q=0.9',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+            'referer': 'https://pgy.xiaohongshu.com/solar/pre-trade/home',
+        }
+        
+        test_results = []
+        
+        for endpoint in test_endpoints:
+            try:
+                response = requests.get(endpoint["url"], headers=headers, cookies=cookies, timeout=10)
+                
+                result = {
+                    "endpoint": endpoint["description"],
+                    "status_code": response.status_code,
+                    "success": response.status_code == 200,
+                    "unauthorized": response.status_code in [401, 403]
+                }
+                
+                test_results.append(result)
+                
+                # 如果任何一个端点返回401/403，说明cookie可能无效
+                if response.status_code in [401, 403]:
+                    return {
+                        "is_valid": False,
+                        "test_results": test_results,
+                        "message": f"API测试失败：{endpoint['description']} 返回 {response.status_code}"
+                    }
+                    
+            except Exception as e:
+                test_results.append({
+                    "endpoint": endpoint["description"],
+                    "error": str(e),
+                    "success": False
+                })
+        
+        # 如果所有测试都通过，说明cookie可能有效
+        successful_tests = sum(1 for r in test_results if r.get("success", False))
+        
+        return {
+            "is_valid": successful_tests > 0,
+            "test_results": test_results,
+            "message": f"完成 {len(test_results)} 项测试，{successful_tests} 项成功"
+        }
+        
+    except Exception as e:
+        return {
+            "is_valid": None,
+            "error": str(e),
+            "message": "网络测试失败，无法确定cookie状态"
+        }
+
+def analyze_cookie_expiry(cookies):
+    """分析cookie信息（不猜测过期时间）"""
+    import time
+    from datetime import datetime, timedelta
+    
+    cookie_info = {
+        "loadts": None,
+        "loadts_readable": None,
+        "session_tokens": [],
+        "important_note": "⚠️ 我们无法从cookie中准确获取过期时间，只能通过实际API测试来验证有效性"
+    }
+    
+    # 解析loadts时间戳（但明确这不是过期时间）
+    if "loadts" in cookies:
+        try:
+            loadts = cookies["loadts"]
+            
+            # 尝试不同的时间戳格式
+            if len(loadts) <= 10:
+                # 秒级时间戳
+                loadts_datetime = datetime.fromtimestamp(int(loadts))
+            else:
+                # 毫秒级时间戳，可能需要补0
+                if len(loadts) == 11:
+                    loadts_ms = int(loadts + '00')
+                elif len(loadts) == 12:
+                    loadts_ms = int(loadts + '0')
+                else:
+                    loadts_ms = int(loadts)
+                loadts_datetime = datetime.fromtimestamp(loadts_ms / 1000)
+            
+            cookie_info["loadts"] = loadts
+            cookie_info["loadts_readable"] = loadts_datetime.strftime("%Y-%m-%d %H:%M:%S")
+            cookie_info["loadts_note"] = "这可能是会话创建时间，不是过期时间"
+            
+        except (ValueError, TypeError) as e:
+            cookie_info["loadts_readable"] = f"无法解析时间戳: {e}"
+    
+    # 识别重要的会话令牌
+    session_keys = ["web_session", "customer-sso-sid", "solar.beaker.session.id", 
+                   "access-token-pgy.xiaohongshu.com", "access-token-pgy.beta.xiaohongshu.com"]
+    
+    for key in session_keys:
+        if key in cookies:
+            cookie_info["session_tokens"].append({
+                "key": key,
+                "length": len(cookies[key]),
+                "prefix": cookies[key][:15] + "..." if len(cookies[key]) > 15 else cookies[key]
+            })
+    
+    # 添加获取真实过期时间的说明
+    cookie_info["how_to_get_real_expiry"] = [
+        "🔍 真实过期时间只能通过以下方式获取：",
+        "1. 浏览器开发者工具 → Application → Cookies → 查看 Expires 列",
+        "2. Network 面板 → 查看 Set-Cookie 响应头",
+        "3. 最可靠的方法：定期测试API调用是否还有效"
+    ]
+    
+    return cookie_info
 
 # 自动 ping 服务，防止 Heroku 休眠
 def ping_service():
