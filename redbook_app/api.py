@@ -109,10 +109,11 @@ async def process_urls_background(url_list):
 
 @app.get("/api/status")
 async def get_status():
+    global processing_status, result_file_path
+    
     try:
         # 确保processing_status是一个列表
         if not isinstance(processing_status, list):
-            global processing_status
             processing_status = []
         
         # 确保result_file_path是字符串或None
