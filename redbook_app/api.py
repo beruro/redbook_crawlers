@@ -93,6 +93,11 @@ async def process_urls_background(url_list):
             latest_scraped_data = data_list
             latest_scrape_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             
+            print(f"💾 内存数据保存调试信息:")
+            print(f"  数据条数: {len(data_list)}")
+            print(f"  时间戳: {latest_scrape_timestamp}")
+            print(f"  数据预览: {data_list[:2] if len(data_list) > 0 else '空'}")
+            
             try:
                 processing_status.append({"status": "info", "message": f"准备保存 {len(data_list)} 条数据到Excel..."})
                 
@@ -487,8 +492,32 @@ async def download_memory():
     """通过内存流直接下载Excel，完全绕过文件系统"""
     global latest_scraped_data, latest_scrape_timestamp
     
+    print(f"🔍 内存下载调试信息:")
+    print(f"  latest_scraped_data: {latest_scraped_data is not None}")
+    print(f"  latest_scrape_timestamp: {latest_scrape_timestamp}")
+    if latest_scraped_data:
+        print(f"  数据条数: {len(latest_scraped_data)}")
+        print(f"  数据预览: {latest_scraped_data[:2] if len(latest_scraped_data) > 0 else '空'}")
+    
     if not latest_scraped_data:
-        return {"error": "没有可下载的数据", "message": "请先爬取数据"}
+        # 尝试从文件系统恢复数据
+        print("🔄 内存中没有数据，尝试从文件系统恢复...")
+        try:
+            # 查找最新的Excel文件
+            import glob
+            excel_files = glob.glob("*.xlsx") + glob.glob("results/*.xlsx") + glob.glob("/tmp/*.xlsx")
+            if excel_files:
+                latest_file = max(excel_files, key=os.path.getctime)
+                print(f"📁 找到文件: {latest_file}")
+                # 读取Excel文件并转换为数据
+                df = pd.read_excel(latest_file)
+                latest_scraped_data = df.to_dict('records')
+                print(f"✅ 从文件恢复数据成功，条数: {len(latest_scraped_data)}")
+            else:
+                return {"error": "没有可下载的数据", "message": "请先爬取数据"}
+        except Exception as e:
+            print(f"❌ 从文件恢复数据失败: {e}")
+            return {"error": "没有可下载的数据", "message": "请先爬取数据"}
     
     try:
         # 创建DataFrame
