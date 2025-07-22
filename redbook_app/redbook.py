@@ -134,6 +134,10 @@ def process_urls(urls):
     all_data = []
     results = []
     
+    print(f"🔍 process_urls 调试信息:")
+    print(f"  输入URL数量: {len(urls)}")
+    print(f"  前3个URL: {urls[:3]}")
+    
     # 将多个URL分批处理
     batch_size = 5  # 每批处理5个URL
     
@@ -160,8 +164,10 @@ def process_urls(urls):
                 
                 if result:
                     all_data.append(result)
+                    print(f"✅ 成功爬取用户 {user_id}: {result.get('达人名称', '未知')}")
                     results.append({"status": "success", "message": f"成功获取 {result['达人名称']} 的数据"})
                 else:
+                    print(f"❌ 爬取用户 {user_id} 失败")
                     results.append({"status": "error", "message": f"获取用户 {user_id} 数据失败"})
             except Exception as e:
                 results.append({"status": "error", "message": f"处理用户 {user_id} 时出错: {str(e)}"})
@@ -173,6 +179,12 @@ def process_urls(urls):
                 time.sleep(pause_time)
         else:
             results.append({"status": "error", "message": f"无法从URL中提取用户ID: {url}"})
+    
+    print(f"📊 process_urls 完成统计:")
+    print(f"  成功爬取数据条数: {len(all_data)}")
+    print(f"  返回结果条数: {len(results)}")
+    if all_data:
+        print(f"  数据预览: {all_data[:2]}")
     
     return all_data, results
 

@@ -81,7 +81,14 @@ async def process_urls_background(url_list):
         processing_status.append({"status": "info", "message": f"开始处理 {len(url_list)} 个URL..."})
         
         # 处理 URL
+        print(f"🔄 开始处理 {len(url_list)} 个URL...")
         data_list, results = redbook.process_urls(url_list)
+        
+        print(f"📊 爬取结果统计:")
+        print(f"  返回的数据条数: {len(data_list) if data_list else 0}")
+        print(f"  返回的结果条数: {len(results) if results else 0}")
+        if data_list:
+            print(f"  数据预览: {data_list[:2]}")
         
         # 更新处理结果
         processing_status.extend(results)

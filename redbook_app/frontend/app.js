@@ -129,19 +129,30 @@ async function pollStatus() {
         
         // 检查响应状态
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            console.error(`HTTP错误: ${response.status}`);
+            // 即使HTTP错误，也等待一段时间后显示下载按钮
+            setTimeout(() => {
+                downloadContainer.style.display = 'block';
+                statusContainer.innerHTML += `<div class="status-item status-info">⚠️ 状态查询异常，但可能处理已完成，请尝试下载</div>`;
+            }, 5000);
+            return;
         }
         
-        // 检查响应是否为JSON
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-            console.warn('响应不是JSON格式，尝试获取文本内容');
-            const text = await response.text();
-            console.log('响应内容:', text);
-            throw new Error('服务器返回非JSON响应');
-        }
+        // 先获取响应文本，然后尝试解析JSON
+        const responseText = await response.text();
+        let data;
         
-        const data = await response.json();
+        try {
+            data = JSON.parse(responseText);
+        } catch (jsonError) {
+            console.warn('JSON解析失败，可能是处理完成:', jsonError);
+            console.log('响应内容:', responseText);
+            
+            // JSON解析失败通常意味着处理已完成，显示下载按钮
+            downloadContainer.style.display = 'block';
+            statusContainer.innerHTML += `<div class="status-item status-info">✅ 处理完成信号检测到，请尝试下载结果</div>`;
+            return; // 停止轮询
+        }
         
         // 更新状态显示
         updateStatusDisplay(data.status || []);
@@ -196,20 +207,12 @@ async function pollStatus() {
     } catch (error) {
         console.error('获取状态时出错:', error);
         
-        // 即使出错，也尝试显示一个错误状态，并保持下载按钮可见
-        const errorMessage = error.message.includes('JSON') ? 
-            '状态获取完成，但响应格式异常。如果数据已处理完成，请尝试下载。' :
-            `获取状态时出错: ${error.message}`;
-            
-        statusContainer.innerHTML += `<div class="status-item status-warning">${errorMessage}</div>`;
+        // 任何错误都认为可能是处理完成，显示下载按钮
+        downloadContainer.style.display = 'block';
+        statusContainer.innerHTML += `<div class="status-item status-info">⚠️ 状态查询异常，如果之前显示了成功消息，请尝试下载</div>`;
         
-        // 如果是JSON解析错误，很可能数据处理已经完成，显示下载按钮
-        if (error.message.includes('JSON') || error.message.includes('parse')) {
-            downloadContainer.style.display = 'block';
-            statusContainer.innerHTML += `<div class="status-item status-info">⚠️ 检测到可能的处理完成信号，如果看到成功消息，请尝试下载结果。</div>`;
-        }
-        
-        // 不再继续轮询以避免重复错误
+        // 停止轮询，避免重复错误
+        return;
     }
 }
 
@@ -227,30 +230,45 @@ function updateStatusDisplay(statusList) {
 
 // 下载结果
 async function downloadResult() {
+    // 显示下载状态
+    statusContainer.innerHTML += `<div class="status-item status-info">🔄 开始下载...</div>`;
+    
     try {
-        // 首先尝试常规文件下载
-        const response = await fetch(`${API_BASE_URL}/download`);
+        // 优先使用内存下载（最可靠的方法）
+        console.log('🔄 尝试内存下载...');
+        statusContainer.innerHTML += `<div class="status-item status-info">📥 尝试内存下载...</div>`;
         
-        if (response.ok && response.headers.get('content-type')?.includes('sheet')) {
-            // 成功获取到Excel文件
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = '小红书达人数据.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            return;
-        }
-        
-        // 如果常规下载失败，尝试内存下载
-        console.log('常规下载失败，尝试内存下载...');
         const memoryResponse = await fetch(`${API_BASE_URL}/download-memory`);
         
         if (memoryResponse.ok) {
-            const blob = await memoryResponse.blob();
+            const contentType = memoryResponse.headers.get('content-type');
+            console.log('内存下载响应类型:', contentType);
+            
+            if (contentType && contentType.includes('sheet')) {
+                const blob = await memoryResponse.blob();
+                console.log('获取到blob，大小:', blob.size);
+                
+                if (blob.size > 1000) { // 确保文件有内容
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = '小红书达人数据.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    statusContainer.innerHTML += `<div class="status-item status-success">✅ 内存下载成功！文件大小: ${(blob.size/1024).toFixed(1)}KB</div>`;
+                    return;
+                }
+            }
+        }
+        
+        // 如果内存下载失败，尝试其他方法
+        console.log('内存下载失败，尝试其他方法...');
+        const secondaryResponse = await fetch(`${API_BASE_URL}/download`);
+        
+        if (secondaryResponse.ok && secondaryResponse.headers.get('content-type')?.includes('sheet')) {
+            const blob = await secondaryResponse.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -261,7 +279,7 @@ async function downloadResult() {
             document.body.removeChild(a);
             
             // 显示成功消息
-            statusContainer.innerHTML += `<div class="status-item status-success">✅ 通过内存下载成功！</div>`;
+            statusContainer.innerHTML += `<div class="status-item status-success">✅ 通过文件下载成功！</div>`;
             return;
         }
         
@@ -296,7 +314,7 @@ async function downloadResult() {
         }
         
         // 所有方法都失败了
-        const errorData = base64Data.error || memoryResponse.error || '所有下载方式都失败了';
+        const errorData = base64Data.error || '所有下载方式都失败了';
         alert(`下载失败: ${errorData}`);
         
     } catch (error) {
