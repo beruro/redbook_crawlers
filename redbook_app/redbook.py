@@ -107,7 +107,7 @@ def scrape_xiaohongshu_blogger(user_id):
         
         # 第二个请求：获取数据摘要
         print(f"🔄 正在获取数据摘要...")
-        summary_params = {"userId": user_id, "business": "0"}
+        summary_params = {"userId": user_id, "business": "1"}
         summary_signature = xhs_client.sign_xs_get(
             uri=data_summary_uri,
             a1_value=a1_value,
@@ -117,7 +117,7 @@ def scrape_xiaohongshu_blogger(user_id):
         summary_headers = base_headers.copy()
         summary_headers['x-s'] = summary_signature
         
-        data_summary_url = f"https://pgy.xiaohongshu.com{data_summary_uri}?userId={user_id}&business=0"
+        data_summary_url = f"https://pgy.xiaohongshu.com{data_summary_uri}?userId={user_id}&business=1"
         response2 = requests.get(data_summary_url, headers=summary_headers, cookies=cookies)
         response2.raise_for_status()
         summary_data = response2.json()
