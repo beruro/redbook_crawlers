@@ -22,6 +22,7 @@ var/
 
 # 虚拟环境 - 更全面的忽略
 venv/
+venv311/
 ENV/
 env/
 redbook_app/venv/

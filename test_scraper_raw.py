@@ -25,8 +25,14 @@ if user_id:
     # Request headers
     headers = {
         'accept': 'application/json, text/plain, */*',
-        'accept-language': 'zh-CN,zh;q=0.9',
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+        'accept-encoding': 'gzip, deflate, br, zstd',
+        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'cache-control': 'no-cache',
+        'content-type': 'application/json',
+        'dnt': '1',
+        'origin': 'https://pgy.xiaohongshu.com',
+        'pragma': 'no-cache',
+        'priority': 'u=1, i',
         'referer': f'https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/{user_id}',
         'sec-ch-ua': '"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
         'sec-ch-ua-mobile': '?0',
@@ -34,6 +40,8 @@ if user_id:
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-origin',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+        'x-requested-with': 'XMLHttpRequest',
     }
     
     # Make the requests
