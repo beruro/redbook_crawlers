@@ -30,17 +30,19 @@ def get_cookies():
     "customerClientId": "195177604463666",
     "abRequestId": "03a0d588d937b6c7f6f8a607e08e2415",
     "x-user-id-creator.xiaohongshu.com": "5aae83144eacab32f473510e",
-    "web_session": "030037a07a83c92536a83f2eae204a75bf449d",
-    "x-user-id-pgy.xiaohongshu.com": "666fcc2de200000000000001",
+    "web_session": "040069b06170eb56e33d3d33bc3a4b976c002b",
+    "unread": "{%22ub%22:%226889bc8f0000000025020287%22%2C%22ue%22:%226888b4f7000000000403e017%22%2C%22uc%22:25}",
+    "webBuild": "4.75.0",
     "xsecappid": "ratlin",
-    "acw_tc": "0a0d0e0317528178280124508e484abf9feaa6595bfcf6f61bffd5e7cbf1de",
-    "websectiga": "f47eda31ec99545da40c2f731f0630efd2b0959e1dd10d5fedac3dce0bd1e04d",
-    "sec_poison_id": "00f05050-2c2e-48da-a3ef-5eb9a67449be",
-    "customer-sso-sid": "68c517528295397851909491ozwwokr3m1tmeecj",
-    "solar.beaker.session.id": "AT-68c517528295397756569461xsm0irgry5lopioj",
-    "access-token-pgy.xiaohongshu.com": "customer.pgy.AT-68c517528295397756569461xsm0irgry5lopioj",
-    "access-token-pgy.beta.xiaohongshu.com": "customer.pgy.AT-68c517528295397756569461xsm0irgry5lopioj",
-    "loadts": "1752817900223"
+    "customer-sso-sid": "68c517533119020201092856bbpbirxkwiaal1rh",
+    "x-user-id-pgy.xiaohongshu.com": "67b6cf6804ee000000000001",
+    "solar.beaker.session.id": "AT-68c517533119024497680616pivku1fb8fbggqox",
+    "access-token-pgy.xiaohongshu.com": "customer.pgy.AT-68c517533119024497680616pivku1fb8fbggqox",
+    "access-token-pgy.beta.xiaohongshu.com": "customer.pgy.AT-68c517533119024497680616pivku1fb8fbggqox",
+    "acw_tc": "0a422b2617540157344662525e944ed9e4cee10a5dd91bd39d099502a703e5",
+    "loadts": "1754015735894",
+    "websectiga": "cffd9dcea65962b05ab048ac76962acee933d26157113bb213105a116241fa6c",
+    "sec_poison_id": "9c7b8686-a616-49e1-b6e4-e28efae4545"
 }
 
 # 初始化全局cookies变量，允许动态更新
@@ -54,8 +56,14 @@ def scrape_xiaohongshu_blogger(user_id):
     # 两个请求共用的请求头
     headers = {
         'accept': 'application/json, text/plain, */*',
-        'accept-language': 'zh-CN,zh;q=0.9',
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+        'accept-encoding': 'gzip, deflate, br, zstd',
+        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'cache-control': 'no-cache',
+        'content-type': 'application/json',
+        'dnt': '1',
+        'origin': 'https://pgy.xiaohongshu.com',
+        'pragma': 'no-cache',
+        'priority': 'u=1, i',
         'referer': f'https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/{user_id}',
         'sec-ch-ua': '"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
         'sec-ch-ua-mobile': '?0',
@@ -63,6 +71,8 @@ def scrape_xiaohongshu_blogger(user_id):
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-origin',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+        'x-requested-with': 'XMLHttpRequest',
     }
     
     # 发送第一个请求获取用户信息
@@ -102,11 +112,31 @@ def scrape_xiaohongshu_blogger(user_id):
 
         return result
         
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 406:
+            print(f"❌ 406错误 - 请求不被接受: {e}")
+            print("💡 解决建议:")
+            print("   1. Cookie可能已过期，请更新Cookie")
+            print("   2. 请求头可能不完整或格式错误")
+            print("   3. 用户代理可能被服务器拒绝")
+            print("   4. 请访问应用页面使用Cookie验证功能")
+            return None
+        elif e.response.status_code == 401:
+            print(f"❌ 401错误 - 未授权访问: {e}")
+            print("💡 Cookie已过期或无效，请重新获取Cookie")
+            return None
+        elif e.response.status_code == 403:
+            print(f"❌ 403错误 - 访问被禁止: {e}")
+            print("💡 可能触发了反爬虫机制，建议稍后再试或更新Cookie")
+            return None
+        else:
+            print(f"❌ HTTP错误 {e.response.status_code}: {e}")
+            return None
     except requests.exceptions.RequestException as e:
-        print(f"请求出错: {e}")
+        print(f"❌ 网络请求出错: {e}")
         return None
     except json.JSONDecodeError:
-        print("解析JSON响应出错")
+        print("❌ 解析JSON响应出错 - 服务器返回的不是有效JSON格式")
         return None
     except Exception as e:
         print(f"发生错误: {e}")
