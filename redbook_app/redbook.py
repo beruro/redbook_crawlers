@@ -53,26 +53,29 @@ def scrape_xiaohongshu_blogger(user_id):
     user_info_url = f"https://pgy.xiaohongshu.com/api/solar/cooperator/user/blogger/{user_id}"
     data_summary_url = f"https://pgy.xiaohongshu.com/api/pgy/kol/data/data_summary?userId={user_id}&business=1"
     
+    # 生成时间戳
+    import time
+    current_timestamp = str(int(time.time() * 1000))
+    
     # 两个请求共用的请求头
     headers = {
         'accept': 'application/json, text/plain, */*',
-        'accept-encoding': 'gzip, deflate, br, zstd',
-        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'accept-language': 'zh-CN,zh;q=0.9',
         'cache-control': 'no-cache',
-        'content-type': 'application/json',
-        'dnt': '1',
-        'origin': 'https://pgy.xiaohongshu.com',
         'pragma': 'no-cache',
         'priority': 'u=1, i',
         'referer': f'https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/{user_id}',
-        'sec-ch-ua': '"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
+        'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
         'sec-ch-ua-mobile': '?0',
         'sec-ch-ua-platform': '"macOS"',
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-origin',
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
-        'x-requested-with': 'XMLHttpRequest',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+        'x-b3-traceid': f'{random.randint(100000000000000, 999999999999999):x}',
+        'x-s': 'O6slsjMlsBsK1BFWZgvlOlsWOjFL1lAbOBTp0jMGZgs3',
+        'x-s-common': '2UQAPsHCPUIjqArjwjHjNsQhPsHCH0rjNsQhPaHCH0c1PahFHjIj2eHjwjQ+GnPW/MPjNsQhPUHCHdQY4BlkJjMAyBpVJsHVHdWFH0ijPshIN0D7PaHVHdWMH0ijP/DA+0PUP/Qf+Bb0JeSfJ/Ph+e802fpSPfMSJ04T8nTCJnQF4A+C89qAPeZIPePMP0clPsHVHdW9H0ijHjIj2eqjwjHjNsQhwsHCHDDAwoQH8B4AyfRI8FS98g+Dpd4daLP3JFSb/BMsn0pSPM87nrldzSzQ2bPAGdb7zgQB8nph8emSy9E0cgk+zSS1qgzianYt8Lzf/LzN4gzaa/+NqMS6qS4HLozoqfQnPbZEp98QyaRSp9P98pSl4oSzcgmca/P78nTTL08z/sVManD9q9z18np/8db8aob7JeQl4epsPrzsagW3tF4ryaRApdz3agYDq7YM47HFqgzkanYMGLSbP9LA/bGIa/+nprSe+9LI4gzVPDbrJg+P4fprLFTALMm7+LSb4d+kpdzt/7b7wrQM498cqBzSpr8g/FSh+bzQygL9nSm7qSmM4epQ4flY/BQdqA+l4oYQ2BpAPp87arS34nMQyFSE8nkdqMD6pMzd8/4SL7bF8aRr+7+rG7mkqBpD8pSUzozQcA8Szb87PDSb/d+/qgzVJfl/4LExpdzQ4fRSy7bFP9+y+7+nJAzdaLp/2LSiz/QH+FlpagYTLrRCJnRQyn+G8pm7zDS9ypHUcfRAzoi7q7Yn4BzQ408S8eq78pSx4gzQznzS+S4j80QM49kQyrkAP9RSqA8r4fpLLozwGML98LzM4ApQ4SSIG9pS8n8n47pIwn4AL7b7JFDALDlQ2BMVq7bFq9bc47SAqFYjaFc7q9zs8o+34gzSanS68nc6cnLAG9l+aLpO8nzj4d+nJFpaanTS8pzn4rMQyFzD4op7qrRl4F+QPFkSpopFzDS3P7+kqgzfanDA8p4c4F8tqg4PwopFaDSeyApQcAz1LB8CpDkCP9Ll4g4ianYizFS3PBpD4g46nSk34rQp+g+gcpbranTo/rkl4rTYqg4Mag8D8/8n4oYzqrTSPFSm8/bP2dQQzLkAyFQO8nkn4ApcLoz9anSdqAbM4eQQcAmApFz8pFS3J7+h2fzAPMm7/rSi8nLIpdzYcf+g+LShJrSQy/pSn/mtqAmy/7+kG94Sygb7JDSbpobQcFcM/ob7arSh/opQPAmSpAZFLB4B/9pk4gq9agYczL4M4F4jJApS2rb9q7Yn4bLhpdcEanTlarSeqBlwqgzf8gb7yrShJ7+n8n4SpMm72ezc4BlQcFFItM8FJDSkaBlF2Skba/PMqM8jP7+3qf4Sngp7L9Ql4BlQ2rY9anT6q98l4BMQ40pS2BchGFSbnnSHJ/WhaL+8qDSe4fp3Loql2SmFPSml4eSQ2rzyanW7qMzS/9pn4gqEqrzcJDSi/bYCpdz8/MmF8DSkLeQQynThagY/qDS9N9prw/pAL9EV8LQn4F+Qyr8CzM87cpbM4AQQcURSp04rnrSkLrG6JFbS8S8Fpbmc4ob6GFlsJn4npFSkJbSILo4wanT9qA80wBEQy/YiJ7b7pFS32DlH4gzgJMmFtFSi4p+Q4DMfanYCLoQn49zQygQPaLLMqA+M4MY6G9MmanYi8LSe+g+8cDTAyM878DSenLQQzLlbGnlQnLS9/pP6JBY+agGAqAmU+9pgpd4FaLL6qMSc4BbQzgQ1aL+mq9zM4FkQ4fMYcdb7nrSe+gPAG9WFaS8FcLRl4oQQ4fzSpMmFLrSiPo+//giManYdq98s8o+xpdzVqMStqA8l4AYUq0mApSmFqDDAJ7+/qURSzb8FzLS9/BMQ2b+xLop7zpbCLdmQ2e+SPpm7Gd+YPBphJBlGqM8FGFDAG0zQyFEALMSa4rS38g+DqgzNHjIj2eDjwjFl+/Pl+ec7+eWhNsQhP/Zjw0ZVHdWlPaHCHflk4BLjKc==',
+        'x-t': current_timestamp,
     }
     
     # 发送第一个请求获取用户信息
